@@ -126,6 +126,21 @@ app.use("/api/employer", employerRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/admin", adminRoutes);
 
+// Serve static files from the React app build directory
+if (config.nodeEnv === 'production') {
+  const frontendBuildPath = path.join(__dirname, '..', 'dist');
+  app.use(express.static(frontendBuildPath));
+  
+  // Catch all handler: send back React's index.html file for client-side routing
+  app.get('*', (req, res) => {
+    // Skip API routes
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ message: 'API route not found' });
+    }
+    res.sendFile(path.join(frontendBuildPath, 'index.html'));
+  });
+}
+
 // 404 handler
 app.use(notFound);
 

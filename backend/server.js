@@ -91,11 +91,40 @@ passport.use(new FacebookStrategy({
   }
 }));
 
-// Security middleware
+// Security middleware - CORS
 app.use(cors({ 
-  origin: config.corsOrigin, 
-  credentials: true 
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      config.corsOrigin,
+      'https://jobs-europa.com',
+      'https://www.jobs-europa.com',
+      'http://localhost:5173', // for development
+      'http://localhost:3000'  // for development
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      return callback(new Error('Not allowed by CORS'), false);
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
 }));
+
+// CORS debugging middleware
+app.use((req, res, next) => {
+  if (config.nodeEnv === 'production') {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - Origin: ${req.get('Origin') || 'none'}`);
+  }
+  next();
+});
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));

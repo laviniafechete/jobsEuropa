@@ -20,11 +20,17 @@ NODE_ENV=production
 PORT=8080
 MONGO_URI=mongodb+srv://your-username:your-password@your-cluster.mongodb.net/jobs-europa
 JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters-long
-CORS_ORIGIN=https://your-domain.com
-FRONTEND_URL=https://your-domain.com
+CORS_ORIGIN=https://jobs-europa.com
+FRONTEND_URL=https://jobs-europa.com
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASS=your-app-password
 ```
+
+### ⚠️ IMPORTANT: CORS Configuration
+**Make sure to set these exact values in DigitalOcean:**
+- `CORS_ORIGIN=https://jobs-europa.com` (no trailing slash!)
+- `FRONTEND_URL=https://jobs-europa.com` (no trailing slash!)
+- `NODE_ENV=production`
 
 ### Optional Variables (for additional features)
 ```

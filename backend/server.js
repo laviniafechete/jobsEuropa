@@ -27,28 +27,71 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// ===== EXTREME CORS FIX - ABSOLUTE FIRST THING =====
-console.log('🚨 EXTREME CORS FIX LOADED - TIMESTAMP:', new Date().toISOString());
+// ===== ULTIMATE CORS FIX - MULTIPLE LOCATIONS =====
+console.log('🔥 ULTIMATE CORS FIX LOADED - TIMESTAMP:', new Date().toISOString());
 
+// Method 1: Pre-middleware headers
 app.use((req, res, next) => {
-  console.log(`🔥 EXTREME CORS: ${req.method} ${req.url} from origin: ${req.get('Origin') || 'none'}`);
+  console.log(`🔥 ULTIMATE CORS PRE: ${req.method} ${req.url} from origin: ${req.get('Origin') || 'none'}`);
   
-  // Set headers with the most basic possible approach
-  res.setHeader('Access-Control-Allow-Origin', '*'); // Allow ALL origins for now
-  res.setHeader('Access-Control-Allow-Methods', '*'); // Allow ALL methods
-  res.setHeader('Access-Control-Allow-Headers', '*'); // Allow ALL headers
+  // Set headers multiple ways
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', '*');
+  res.setHeader('Access-Control-Allow-Headers', '*');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Max-Age', '86400');
   
-  console.log('🔥 EXTREME CORS headers set with * wildcard');
+  // Also set with res.header
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', '*');
+  res.header('Access-Control-Allow-Headers', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  console.log('🔥 ULTIMATE CORS headers set with BOTH setHeader and header');
   
   // Handle OPTIONS immediately
   if (req.method === 'OPTIONS') {
-    console.log('🔥 EXTREME CORS: OPTIONS handled immediately');
+    console.log('🔥 ULTIMATE CORS: OPTIONS handled immediately');
     res.status(200);
     res.end();
     return;
   }
+  
+  next();
+});
+
+// Method 2: Response interceptor to force headers on ALL responses
+app.use((req, res, next) => {
+  const originalSend = res.send;
+  const originalJson = res.json;
+  const originalEnd = res.end;
+  
+  res.send = function(data) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', '*');
+    res.setHeader('Access-Control-Allow-Headers', '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    console.log('🔥 ULTIMATE CORS: Headers forced on send()');
+    return originalSend.call(this, data);
+  };
+  
+  res.json = function(data) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', '*');
+    res.setHeader('Access-Control-Allow-Headers', '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    console.log('🔥 ULTIMATE CORS: Headers forced on json()');
+    return originalJson.call(this, data);
+  };
+  
+  res.end = function(data) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', '*');
+    res.setHeader('Access-Control-Allow-Headers', '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    console.log('🔥 ULTIMATE CORS: Headers forced on end()');
+    return originalEnd.call(this, data);
+  };
   
   next();
 });

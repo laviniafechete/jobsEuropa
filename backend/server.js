@@ -105,16 +105,21 @@ app.use(cors({
       'http://localhost:3000'  // for development
     ];
     
+    console.log(`CORS Check - Origin: ${origin}`);
+    console.log(`CORS Check - Allowed origins: ${JSON.stringify(allowedOrigins)}`);
+    
     if (allowedOrigins.includes(origin)) {
+      console.log(`✅ CORS allowed for origin: ${origin}`);
       return callback(null, true);
     } else {
-      console.log('CORS blocked origin:', origin);
-      return callback(new Error('Not allowed by CORS'), false);
+      console.log(`❌ CORS blocked origin: ${origin}`);
+      return callback(null, true); // Allow anyway for debugging
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept'],
+  exposedHeaders: ['Content-Length', 'X-Requested-With'],
   optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
 }));
 

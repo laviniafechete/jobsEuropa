@@ -27,23 +27,27 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// ===== RADICAL CORS FIX - MANUAL HEADERS FIRST =====
+// ===== EXTREME CORS FIX - ABSOLUTE FIRST THING =====
+console.log('🚨 EXTREME CORS FIX LOADED - TIMESTAMP:', new Date().toISOString());
+
 app.use((req, res, next) => {
-  console.log(`🚀 MANUAL CORS: ${req.method} ${req.path} from ${req.get('Origin') || 'no-origin'}`);
+  console.log(`🔥 EXTREME CORS: ${req.method} ${req.url} from origin: ${req.get('Origin') || 'none'}`);
   
-  // Set CORS headers for EVERY request
-  res.header('Access-Control-Allow-Origin', 'https://www.jobs-europa.com');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Max-Age', '86400'); // 24 hours
+  // Set headers with the most basic possible approach
+  res.setHeader('Access-Control-Allow-Origin', '*'); // Allow ALL origins for now
+  res.setHeader('Access-Control-Allow-Methods', '*'); // Allow ALL methods
+  res.setHeader('Access-Control-Allow-Headers', '*'); // Allow ALL headers
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', '86400');
   
-  console.log('✅ CORS headers manually set for all requests');
+  console.log('🔥 EXTREME CORS headers set with * wildcard');
   
-  // Handle preflight OPTIONS requests immediately
+  // Handle OPTIONS immediately
   if (req.method === 'OPTIONS') {
-    console.log('🎯 OPTIONS preflight - responding immediately');
-    return res.status(200).end();
+    console.log('🔥 EXTREME CORS: OPTIONS handled immediately');
+    res.status(200);
+    res.end();
+    return;
   }
   
   next();

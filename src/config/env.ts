@@ -9,7 +9,8 @@ const isDevelopment = import.meta.env.MODE === 'development' ||
 
 const isProduction = import.meta.env.MODE === 'production' || 
                     import.meta.env.PROD ||
-                    window.location.hostname === 'jobs-europa.com';
+                    window.location.hostname === 'jobs-europa.com' ||
+                    window.location.hostname === 'www.jobs-europa.com';
 
 // Select configuration based on environment
 const config = isDevelopment ? developmentConfig : productionConfig;

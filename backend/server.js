@@ -97,34 +97,36 @@ console.log(`NODE_ENV: ${config.nodeEnv}`);
 console.log(`CORS_ORIGIN from config: ${config.corsOrigin}`);
 console.log(`Available env vars: ${Object.keys(process.env).filter(k => k.includes('CORS')).join(', ')}`);
 
+// Manual CORS headers (failsafe)
+app.use((req, res, next) => {
+  const origin = req.get('Origin');
+  console.log(`🌐 Manual CORS - Origin: ${origin || 'none'}`);
+  
+  // Set CORS headers manually
+  res.header('Access-Control-Allow-Origin', 'https://www.jobs-europa.com');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Origin, Accept');
+  res.header('Access-Control-Expose-Headers', 'Content-Length, X-Requested-With');
+  
+  console.log('✅ Manual CORS headers set');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    console.log('🚀 Handling OPTIONS preflight request');
+    return res.status(200).end();
+  }
+  
+  next();
+});
+
 app.use(cors({ 
   origin: function(origin, callback) {
-    console.log(`🌐 CORS Request - Origin: ${origin || 'none'}`);
+    console.log(`🌐 CORS Middleware - Origin: ${origin || 'none'}`);
     
     // TEMPORARY: Allow all origins for debugging
     console.log(`✅ CORS: Allowing all origins for debugging`);
     return callback(null, true);
-    
-    /* Original logic - temporarily disabled
-    const allowedOrigins = [
-      config.corsOrigin,
-      'https://jobs-europa.com',
-      'https://www.jobs-europa.com',
-      'http://localhost:5173',
-      'http://localhost:3000'
-    ];
-    
-    console.log(`CORS Check - Origin: ${origin}`);
-    console.log(`CORS Check - Allowed origins: ${JSON.stringify(allowedOrigins)}`);
-    
-    if (allowedOrigins.includes(origin)) {
-      console.log(`✅ CORS allowed for origin: ${origin}`);
-      return callback(null, true);
-    } else {
-      console.log(`❌ CORS blocked origin: ${origin}`);
-      return callback(null, true); // Allow anyway for debugging
-    }
-    */
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

@@ -84,6 +84,9 @@ WEB2SMS_AUTH_KEY=your-web2sms-auth-key
 - **Build Scripts:** Updated to use npm ci for better performance
 - **Dependencies:** Fixed vulnerabilities with npm audit
 - **Linux Compatibility:** Added Linux x64 rollup module for DigitalOcean
+- **TypeScript Build:** Moved TypeScript, Vite, and @vitejs/plugin-react to production dependencies
+- **CORS Configuration:** Enhanced CORS setup with multiple origin support
+- **Deployment Scripts:** Updated heroku-postbuild to use npm ci for consistency
 
 ## 🐛 Troubleshooting
 

@@ -1,6 +1,6 @@
 import express from "express";
 import mongoose from "mongoose";
-import cors from "cors";
+// import cors from "cors"; // REMOVED - doing manual CORS
 import path from "path";
 import { fileURLToPath } from "url";
 import config from "./config.js";
@@ -26,6 +26,28 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+// ===== RADICAL CORS FIX - MANUAL HEADERS FIRST =====
+app.use((req, res, next) => {
+  console.log(`🚀 MANUAL CORS: ${req.method} ${req.path} from ${req.get('Origin') || 'no-origin'}`);
+  
+  // Set CORS headers for EVERY request
+  res.header('Access-Control-Allow-Origin', 'https://www.jobs-europa.com');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400'); // 24 hours
+  
+  console.log('✅ CORS headers manually set for all requests');
+  
+  // Handle preflight OPTIONS requests immediately
+  if (req.method === 'OPTIONS') {
+    console.log('🎯 OPTIONS preflight - responding immediately');
+    return res.status(200).end();
+  }
+  
+  next();
+});
 
 // Passport session setup (required for OAuth)
 app.use(session({
@@ -90,59 +112,6 @@ passport.use(new FacebookStrategy({
     return done(err, null);
   }
 }));
-
-// Security middleware - CORS (DEBUGGING MODE)
-console.log('🔧 CORS Debug Info:');
-console.log(`NODE_ENV: ${config.nodeEnv}`);
-console.log(`CORS_ORIGIN from config: ${config.corsOrigin}`);
-console.log(`Available env vars: ${Object.keys(process.env).filter(k => k.includes('CORS')).join(', ')}`);
-
-// Manual CORS headers (failsafe)
-app.use((req, res, next) => {
-  const origin = req.get('Origin');
-  console.log(`🌐 Manual CORS - Origin: ${origin || 'none'}`);
-  
-  // Set CORS headers manually
-  res.header('Access-Control-Allow-Origin', 'https://www.jobs-europa.com');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Origin, Accept');
-  res.header('Access-Control-Expose-Headers', 'Content-Length, X-Requested-With');
-  
-  console.log('✅ Manual CORS headers set');
-  
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    console.log('🚀 Handling OPTIONS preflight request');
-    return res.status(200).end();
-  }
-  
-  next();
-});
-
-app.use(cors({ 
-  origin: function(origin, callback) {
-    console.log(`🌐 CORS Middleware - Origin: ${origin || 'none'}`);
-    
-    // TEMPORARY: Allow all origins for debugging
-    console.log(`✅ CORS: Allowing all origins for debugging`);
-    return callback(null, true);
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept'],
-  exposedHeaders: ['Content-Length', 'X-Requested-With'],
-  optionsSuccessStatus: 200
-}));
-
-// CORS debugging middleware
-app.use((req, res, next) => {
-  if (config.nodeEnv === 'production') {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - Origin: ${req.get('Origin') || 'none'}`);
-    console.log(`CORS_ORIGIN from env: ${config.corsOrigin}`);
-  }
-  next();
-});
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));

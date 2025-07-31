@@ -91,6 +91,7 @@ export default function JobList() {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [showContactOptions, setShowContactOptions] = useState<{ [jobId: string]: boolean }>({});
   const [showModalContactOptions, setShowModalContactOptions] = useState(false);
+  const [corsTestResult, setCorsTestResult] = useState<string>('');
 
   // Fetch jobs from API
   const fetchJobs = async (pageNum = 1, reset = false) => {
@@ -275,6 +276,28 @@ Cu stimă`);
       return "Salariu negociabil";
     }
     return "Salariu negociabil";
+  };
+
+  const testCORS = async () => {
+    try {
+      console.log('🧪 Testing CORS...');
+      const response = await fetch(API_BASE_URL + '/cors-test', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', [...response.headers.entries()]);
+      
+      const data = await response.json();
+      console.log('📡 Response data:', data);
+      setCorsTestResult(`✅ CORS Test Success: ${data.message}`);
+    } catch (error: any) {
+      console.error('❌ CORS Test Failed:', error);
+      setCorsTestResult(`❌ CORS Test Failed: ${error.message}`);
+    }
   };
 
   if (loading && jobs.length === 0) {
@@ -680,6 +703,18 @@ Cu stimă`);
             </button>
           </div>
         )}
+        <div className="mb-4 p-4 bg-yellow-100 border border-yellow-400 rounded">
+          <h3 className="font-bold text-yellow-800">🧪 CORS Debug</h3>
+          <button 
+            onClick={testCORS}
+            className="bg-blue-500 text-white px-4 py-2 rounded mr-2"
+          >
+            Test CORS
+          </button>
+          {corsTestResult && (
+            <p className="mt-2 text-sm">{corsTestResult}</p>
+          )}
+        </div>
       </div>
     </div>
   );

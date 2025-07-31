@@ -162,6 +162,23 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// CORS Test endpoint
+app.get('/api/cors-test', (req, res) => {
+  console.log('🧪 CORS Test endpoint hit!');
+  console.log(`Origin: ${req.get('Origin') || 'none'}`);
+  console.log(`User-Agent: ${req.get('User-Agent')}`);
+  console.log(`Headers: ${JSON.stringify(req.headers)}`);
+  
+  res.set('X-Debug-CORS', 'test-endpoint');
+  res.json({
+    success: true,
+    message: 'CORS test endpoint working',
+    origin: req.get('Origin'),
+    timestamp: new Date().toISOString(),
+    corsDebug: true
+  });
+});
+
 // API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/cv", cvRoutes);

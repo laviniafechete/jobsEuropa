@@ -91,18 +91,27 @@ passport.use(new FacebookStrategy({
   }
 }));
 
-// Security middleware - CORS
+// Security middleware - CORS (DEBUGGING MODE)
+console.log('🔧 CORS Debug Info:');
+console.log(`NODE_ENV: ${config.nodeEnv}`);
+console.log(`CORS_ORIGIN from config: ${config.corsOrigin}`);
+console.log(`Available env vars: ${Object.keys(process.env).filter(k => k.includes('CORS')).join(', ')}`);
+
 app.use(cors({ 
   origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    console.log(`🌐 CORS Request - Origin: ${origin || 'none'}`);
     
+    // TEMPORARY: Allow all origins for debugging
+    console.log(`✅ CORS: Allowing all origins for debugging`);
+    return callback(null, true);
+    
+    /* Original logic - temporarily disabled
     const allowedOrigins = [
       config.corsOrigin,
       'https://jobs-europa.com',
       'https://www.jobs-europa.com',
-      'http://localhost:5173', // for development
-      'http://localhost:3000'  // for development
+      'http://localhost:5173',
+      'http://localhost:3000'
     ];
     
     console.log(`CORS Check - Origin: ${origin}`);
@@ -115,12 +124,13 @@ app.use(cors({
       console.log(`❌ CORS blocked origin: ${origin}`);
       return callback(null, true); // Allow anyway for debugging
     }
+    */
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept'],
   exposedHeaders: ['Content-Length', 'X-Requested-With'],
-  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+  optionsSuccessStatus: 200
 }));
 
 // CORS debugging middleware

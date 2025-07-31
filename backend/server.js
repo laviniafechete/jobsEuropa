@@ -122,6 +122,7 @@ app.use(cors({
 app.use((req, res, next) => {
   if (config.nodeEnv === 'production') {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - Origin: ${req.get('Origin') || 'none'}`);
+    console.log(`CORS_ORIGIN from env: ${config.corsOrigin}`);
   }
   next();
 });

@@ -1,61 +1,77 @@
-# 🚨 CORS Error Fix Guide
+# 🚨 CORS Error Fix Guide - WWW Subdomain Issue
 
-## ❌ **Problema:**
-Frontend-ul (`https://jobs-europa.com`) nu poate comunica cu backend-ul din cauza CORS policy.
+## ❌ **Problema Exactă:**
+- Site: `https://www.jobs-europa.com` (cu **www**)
+- API: `https://jobs-europa.com/api` (fără **www**)
+- Origin: `https://www.jobs-europa.com`
+- Status: 200 OK, dar frontend nu primește răspunsul
 
 ## ✅ **Soluția:**
 
 ### 1. **Setează Variabilele de Mediu în DigitalOcean:**
 
-**Mergi în DigitalOcean → App Platform → Settings → Environment Variables și adaugă:**
+**Mergi în DigitalOcean → App Platform → Settings → Environment Variables:**
 
 ```bash
 NODE_ENV=production
-CORS_ORIGIN=https://jobs-europa.com
-FRONTEND_URL=https://jobs-europa.com
+CORS_ORIGIN=https://www.jobs-europa.com
+FRONTEND_URL=https://www.jobs-europa.com
 ```
 
-⚠️ **IMPORTANT:** Nu pune `/` la sfârșitul URL-urilor!
+⚠️ **IMPORTANT:** 
+- Cu **www** dacă site-ul tău rulează pe www
+- Fără `/` la sfârșitul URL-urilor!
 
-### 2. **Redeploy Aplicația:**
-După ce adaugi variabilele, apasă **Actions → Force Rebuild** în DigitalOcean.
+### 2. **Configurația CORS Din Cod (Deja Implementată):**
 
-### 3. **Verifică Logs:**
-Mergi la **Runtime Logs** să vezi:
-```
-2025-07-30 - GET /api/jobs - Origin: https://jobs-europa.com
-```
-
-## 🔧 **Ce Am Reparat în Cod:**
-
-1. **CORS Configuration** - Mai permisivă și cu debugging
-2. **Multiple Origins** - Permite atât `jobs-europa.com` cât și `www.jobs-europa.com`
-3. **CORS Debugging** - Log-uri pentru a vedea ce origin-uri sunt blocate
-4. **Headers** - Toate header-urile necesare pentru API calls
-
-## 🐛 **Debugging:**
-
-### Verifică Variabilele de Mediu:
-În DigitalOcean logs vei vedea:
-```
-🚀 Server running on port 8080
-🌍 Environment: production
-CORS Origin: https://jobs-europa.com
+```javascript
+const allowedOrigins = [
+  config.corsOrigin,
+  'https://jobs-europa.com',
+  'https://www.jobs-europa.com', // ✅ Deja inclus
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
 ```
 
-### Verifică API Calls:
-În browser Network tab:
-- Status: `200 OK` 
-- Response Headers: `Access-Control-Allow-Origin: https://jobs-europa.com`
+### 3. **Redeploy Aplicația:**
+După ce setezi variabilele, apasă **Actions → Force Rebuild**.
 
-## 🚀 **După Fix:**
-- ✅ Frontend poate face API calls
-- ✅ Autentificarea funcționează
-- ✅ Toate feature-urile sunt active
+### 4. **Verifică Logs:**
+În **Runtime Logs** vei vedea:
+```
+2025-07-30 - GET /api/jobs - Origin: https://www.jobs-europa.com
+CORS_ORIGIN from env: https://www.jobs-europa.com
+```
 
-## 📋 **Checklist Final:**
-- [ ] `CORS_ORIGIN=https://jobs-europa.com` (fără trailing slash)
+## 🔧 **Ce Să Verifici:**
+
+### **A. Variabile de Mediu:**
+```bash
+CORS_ORIGIN=https://www.jobs-europa.com  # Cu www dacă site-ul are www
+NODE_ENV=production                      # Obligatoriu
+```
+
+### **B. Debugging în Browser:**
+1. **Network Tab → API Call**
+2. **Response Headers:** Trebuie să vezi `Access-Control-Allow-Origin: https://www.jobs-europa.com`
+3. **Status:** 200 OK + Response body vizibil
+
+### **C. Runtime Logs:**
+```
+✅ CORS_ORIGIN from env: https://www.jobs-europa.com
+✅ Origin allowed: https://www.jobs-europa.com
+```
+
+## 🚀 **Rezultat Final:**
+- ✅ Frontend primește răspunsurile API
+- ✅ Job list se încarcă
+- ✅ Toate feature-urile funcționează
+- ✅ Nu mai sunt erori CORS
+
+## 📋 **Checklist Rapid:**
+- [ ] `CORS_ORIGIN=https://www.jobs-europa.com` (cu www)
 - [ ] `NODE_ENV=production`
 - [ ] Rebuild aplicația în DigitalOcean
 - [ ] Verifică logs pentru confirmarea variabilelor
-- [ ] Testează API calls în browser 
+- [ ] Testează API calls în browser Network tab 

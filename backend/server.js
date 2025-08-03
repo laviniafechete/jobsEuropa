@@ -27,22 +27,14 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// ===== SIMPLE CORS CONFIGURATION =====
+// ===== CORS CONFIGURATION FOR APP PLATFORM =====
 app.use((req, res, next) => {
-  const origin = req.get('Origin');
-  
-  // Allow both www and non-www domains for jobs-europa.com
-  if (origin && origin.includes('jobs-europa.com')) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else if (origin && origin.includes('localhost')) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-  }
-  
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  // Allow all origins for App Platform
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', '86400');
   
   // Handle preflight requests
   if (req.method === 'OPTIONS') {

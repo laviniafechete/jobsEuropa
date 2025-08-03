@@ -1,12 +1,12 @@
 export const developmentConfig = {
   APP_ENV: 'development',
-  API_BASE_URL: 'http://localhost:5001',
+  API_BASE_URL: 'http://localhost:5001/api',
   APP_BASE_URL: 'http://localhost:5173',
   BACKEND_URL: 'http://localhost:5001',
   
   // OAuth URLs
-  GOOGLE_OAUTH_URL: 'http://localhost:5001/auth/google',
-  FACEBOOK_OAUTH_URL: 'http://localhost:5001/auth/facebook',
+  GOOGLE_OAUTH_URL: 'http://localhost:5001/api/auth/google',
+  FACEBOOK_OAUTH_URL: 'http://localhost:5001/api/auth/facebook',
   
   // Contact Information
   CONTACT_PHONE: '+40757758647',
@@ -19,11 +19,11 @@ export const developmentConfig = {
   
   // API Endpoints
   API: {
-    AUTH: '/api/auth',
-    USERS: '/api/users',
-    EMPLOYERS: '/api/employer',
-    JOBS: '/api/jobs',
-    CV: '/api/cv',
-    ADMIN: '/api/admin'
+    AUTH: '/auth',
+    USERS: '/users',
+    EMPLOYERS: '/employer',
+    JOBS: '/jobs',
+    CV: '/cv',
+    ADMIN: '/admin'
   }
 }; 

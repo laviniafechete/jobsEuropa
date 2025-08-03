@@ -19,11 +19,11 @@ export const productionConfig = {
   
   // API Endpoints
   API: {
-    AUTH: '/api/auth',
-    USERS: '/api/users',
-    EMPLOYERS: '/api/employer',
-    JOBS: '/api/jobs',
-    CV: '/api/cv',
-    ADMIN: '/api/admin'
+    AUTH: '/auth',
+    USERS: '/users',
+    EMPLOYERS: '/employer',
+    JOBS: '/jobs',
+    CV: '/cv',
+    ADMIN: '/admin'
   }
 }; 

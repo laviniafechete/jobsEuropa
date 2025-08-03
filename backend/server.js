@@ -60,42 +60,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Method 2: Response interceptor to force headers on ALL responses
-app.use((req, res, next) => {
-  const originalSend = res.send;
-  const originalJson = res.json;
-  const originalEnd = res.end;
-  
-  res.send = function(data) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', '*');
-    res.setHeader('Access-Control-Allow-Headers', '*');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    console.log('🔥 ULTIMATE CORS: Headers forced on send()');
-    return originalSend.call(this, data);
-  };
-  
-  res.json = function(data) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', '*');
-    res.setHeader('Access-Control-Allow-Headers', '*');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    console.log('🔥 ULTIMATE CORS: Headers forced on json()');
-    return originalJson.call(this, data);
-  };
-  
-  res.end = function(data) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', '*');
-    res.setHeader('Access-Control-Allow-Headers', '*');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    console.log('🔥 ULTIMATE CORS: Headers forced on end()');
-    return originalEnd.call(this, data);
-  };
-  
-  next();
-});
-
 // Passport session setup (required for OAuth)
 app.use(session({
   secret: process.env.SESSION_SECRET || 'jobs-europa-session-secret',

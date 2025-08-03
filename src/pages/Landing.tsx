@@ -19,7 +19,7 @@ export default function Landing() {
           și multe altele.
         </p>
 
-        <div className="flex gap-4 max-w-8xl mx-auto justify-center items-center">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto w-full px-4">
           <EntryCard type="candidat" onClick={() => navigate('/employee')} />
           <EntryCard type="angajator" onClick={() => navigate('/employer')} />
         </div>

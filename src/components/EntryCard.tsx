@@ -30,32 +30,35 @@ export default function EntryCard({ type, onClick }: EntryCardProps) {
   const content = cardContent[type];
   const isCandidat = type === "candidat";
   return (
-    <div className="bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col sm:flex-row max-w-2xl mx-auto w-full">
-      <img
-        src={content.image}
-        alt={content.title}
-        className="w-full sm:w-56 h-40 sm:h-48 object-cover"
-        loading="lazy"
-      />
+    <div className="bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col h-full min-h-[400px] sm:min-h-[450px] max-w-sm mx-auto w-full">
+      <div className="relative h-48 sm:h-52">
+        <img
+          src={content.image}
+          alt={content.title}
+          className="w-full h-full object-cover"
+          loading="lazy"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+      </div>
       <div className="flex-1 p-4 sm:p-6 flex flex-col justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-3">
             {content.icon}
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
               {content.title}
             </h2>
           </div>
-          <p className="text-gray-600 mb-4 text-sm sm:text-base">
+          <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
             {content.description}
           </p>
         </div>
         <button
           onClick={onClick}
-          className={`mt-2 w-full py-2 rounded-lg font-semibold text-white transition p-2
+          className={`mt-4 w-full py-3 px-4 rounded-lg font-semibold text-white transition-colors duration-200 hover:shadow-lg
             ${
               type === "candidat"
-                ? "bg-blue-600 hover:bg-blue-700"
-                : "bg-green-600 hover:bg-green-700"
+                ? "bg-blue-600 hover:bg-blue-700 active:bg-blue-800"
+                : "bg-green-600 hover:bg-green-700 active:bg-green-800"
             }
           `}
         >

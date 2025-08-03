@@ -1,12 +1,12 @@
 export const productionConfig = {
   APP_ENV: 'production',
-  API_BASE_URL: 'https://api.jobs-europa.com',
+  API_BASE_URL: 'https://www.jobs-europa.com/api',
   APP_BASE_URL: 'https://www.jobs-europa.com',
-  BACKEND_URL: 'https://api.jobs-europa.com',
+  BACKEND_URL: 'https://www.jobs-europa.com',
   
   // OAuth URLs
-  GOOGLE_OAUTH_URL: 'https://api.jobs-europa.com/auth/google',
-  FACEBOOK_OAUTH_URL: 'https://api.jobs-europa.com/auth/facebook',
+  GOOGLE_OAUTH_URL: 'https://www.jobs-europa.com/api/auth/google',
+  FACEBOOK_OAUTH_URL: 'https://www.jobs-europa.com/api/auth/facebook',
   
   // Contact Information
   CONTACT_PHONE: '+40757758647',

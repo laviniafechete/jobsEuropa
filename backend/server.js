@@ -138,7 +138,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // CORS Test endpoint
-app.get('/api/cors-test', (req, res) => {
+app.get('/cors-test', (req, res) => {
   console.log('🧪 CORS Test endpoint hit!');
   console.log(`Origin: ${req.get('Origin') || 'none'}`);
   console.log(`User-Agent: ${req.get('User-Agent')}`);
@@ -155,13 +155,13 @@ app.get('/api/cors-test', (req, res) => {
 });
 
 // API routes
-app.use("/api/auth", authRoutes);
-app.use("/api/cv", cvRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/employers", employerRoutes);
-app.use("/api/employer", employerRoutes);
-app.use("/api/jobs", jobRoutes);
-app.use("/api/admin", adminRoutes);
+app.use("/auth", authRoutes);
+app.use("/cv", cvRoutes);
+app.use("/users", userRoutes);
+app.use("/employers", employerRoutes);
+app.use("/employer", employerRoutes);
+app.use("/jobs", jobRoutes);
+app.use("/admin", adminRoutes);
 
 // Serve static files from the React app build directory
 const frontendBuildPath = path.join(__dirname, '..', 'dist');
@@ -171,12 +171,12 @@ app.use(express.static(frontendBuildPath));
 
 // Catch all handler: send back React's index.html file for client-side routing
 app.get('*', (req, res) => {
-  // Skip API routes - they should be handled by the API routes above
-  if (req.path.startsWith('/api/')) {
+  // For API subdomain, don't serve React app
+  if (req.hostname === 'api.jobs-europa.com') {
     return res.status(404).json({ message: 'API route not found' });
   }
   
-  // For non-API routes, serve the React app
+  // For other domains, serve the React app
   res.sendFile(path.join(frontendBuildPath, 'index.html'));
 });
 

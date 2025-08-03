@@ -184,7 +184,7 @@ export default function EmployeeCVForm() {
         userId: user?.userId,
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/cv/save`, {
+      const response = await fetch(`${API_BASE_URL}/cv/save`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

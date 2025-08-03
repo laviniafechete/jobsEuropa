@@ -36,7 +36,7 @@ export default function PostJobForm() {
     if (!token) return;
     const fetchJobs = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/jobs/employer/my-jobs`, {
+        const response = await fetch(`${API_BASE_URL}/jobs/employer/my-jobs`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
@@ -119,7 +119,7 @@ export default function PostJobForm() {
         benefits
       };
 
-              const response = await fetch(`${API_BASE_URL}/api/jobs`, {
+              const response = await fetch(`${API_BASE_URL}/jobs`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

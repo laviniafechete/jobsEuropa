@@ -90,7 +90,7 @@ export default function EditCVModal({ open, onClose }: EditCVModalProps) {
     try {
       if (!user) throw new Error("Utilizator neautentificat");
 
-      const response = await fetch(`${API_BASE_URL}/api/cv/save`, {
+      const response = await fetch(`${API_BASE_URL}/cv/save`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

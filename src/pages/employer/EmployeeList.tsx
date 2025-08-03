@@ -332,7 +332,7 @@ export default function EmployeeList({ onNavigate }: EmployeeListProps) {
       try {
         const auth = JSON.parse(localStorage.getItem("auth-storage") || "{}")
         const token = auth?.state?.token;
-        const response = await fetch(`${API_BASE_URL}/api/users`, {
+        const response = await fetch(`${API_BASE_URL}/users`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();

@@ -142,7 +142,7 @@ export default function Profile() {
     hasLoadedCV.current = true;
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/cv/get`, {
+      const response = await fetch(`${API_BASE_URL}/cv/get`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -209,7 +209,7 @@ export default function Profile() {
         userId: user?.userId,
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/cv/save`, {
+      const response = await fetch(`${API_BASE_URL}/cv/save`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

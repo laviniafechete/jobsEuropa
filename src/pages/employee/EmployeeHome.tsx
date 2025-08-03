@@ -42,7 +42,7 @@ export default function EmployeeHome() {
     
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/users/me`, {
+      const response = await fetch(`${API_BASE_URL}/users/me`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

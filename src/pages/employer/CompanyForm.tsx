@@ -49,7 +49,7 @@ export default function CompanyForm({ onSuccess = () => {}, initialData, onSave 
   useEffect(() => {
     if (!token) return;
     setLoading(true);
-          fetch(`${API_BASE_URL}/api/employer/profile`, {
+          fetch(`${API_BASE_URL}/employer/profile`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -97,7 +97,7 @@ export default function CompanyForm({ onSuccess = () => {}, initialData, onSave 
         ...form,
         phone: form.phone.prefix + form.phone.number,
       };
-      const response = await fetch(`${API_BASE_URL}/api/employer/save-profile`, {
+      const response = await fetch(`${API_BASE_URL}/employer/save-profile`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -114,7 +114,7 @@ export default function CompanyForm({ onSuccess = () => {}, initialData, onSave 
       showSuccess("Profilul companiei a fost salvat cu succes!");
       // Fetch employer profile again to update hasProfileCompleted
       try {
-        const profileRes = await fetch(`${API_BASE_URL}/api/employer/profile`, {
+        const profileRes = await fetch(`${API_BASE_URL}/employer/profile`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const profileData = await profileRes.json();

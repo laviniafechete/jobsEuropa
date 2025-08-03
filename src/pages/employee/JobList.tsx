@@ -105,7 +105,7 @@ export default function JobList() {
       });
 
       const response = await fetch(
-        `${API_BASE_URL}/api/jobs?${params}`,
+        `${API_BASE_URL}/jobs?${params}`,
         {
           headers: {
             ...(token && { Authorization: `Bearer ${token}` }),
@@ -181,7 +181,7 @@ export default function JobList() {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/jobs/${job._id}/apply`,
+        `${API_BASE_URL}/jobs/${job._id}/apply`,
         {
           method: "POST",
           headers: {

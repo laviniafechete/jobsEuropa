@@ -29,7 +29,7 @@ export default function EmployerProfile() {
     }
     setChanging(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/employer/change-password`, {
+      const res = await fetch(`${API_BASE_URL}/employer/change-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

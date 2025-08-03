@@ -140,7 +140,7 @@ export function EmployerProvider({ children }: { children: React.ReactNode }) {
         benefits: []
       };
 
-              const response = await fetch(`${API_BASE_URL}/api/jobs`, {
+              const response = await fetch(`${API_BASE_URL}/jobs`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

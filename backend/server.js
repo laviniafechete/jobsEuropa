@@ -207,19 +207,19 @@ app.use("/api/jobs", jobRoutes);
 app.use("/api/admin", adminRoutes);
 
 // Serve static files from the React app build directory
-if (config.nodeEnv === 'production') {
-  const frontendBuildPath = path.join(__dirname, '..', 'dist');
-  app.use(express.static(frontendBuildPath));
-  
-  // Catch all handler: send back React's index.html file for client-side routing
-  app.get('*', (req, res) => {
-    // Skip API routes
-    if (req.path.startsWith('/api/')) {
-      return res.status(404).json({ message: 'API route not found' });
-    }
-    res.sendFile(path.join(frontendBuildPath, 'index.html'));
-  });
-}
+const frontendBuildPath = path.join(__dirname, '..', 'dist');
+
+// Serve static files in both development and production
+app.use(express.static(frontendBuildPath));
+
+// Catch all handler: send back React's index.html file for client-side routing
+app.get('*', (req, res) => {
+  // Skip API routes
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ message: 'API route not found' });
+  }
+  res.sendFile(path.join(frontendBuildPath, 'index.html'));
+});
 
 // 404 handler
 app.use(notFound);
@@ -242,9 +242,12 @@ const connectDB = async () => {
 const gracefulShutdown = (signal) => {
   console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
   
-  mongoose.connection.close(() => {
+  mongoose.connection.close().then(() => {
     console.log('✅ MongoDB connection closed');
     process.exit(0);
+  }).catch((error) => {
+    console.error('❌ Error closing MongoDB connection:', error);
+    process.exit(1);
   });
 };
 

@@ -31,8 +31,10 @@ const app = express();
 app.use((req, res, next) => {
   const origin = req.get('Origin');
   
-  // Allow both www and non-www domains
-  if (origin && (origin.includes('jobs-europa.com') || origin.includes('localhost'))) {
+  // Allow both www and non-www domains for jobs-europa.com
+  if (origin && origin.includes('jobs-europa.com')) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (origin && origin.includes('localhost')) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   } else {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -169,10 +171,12 @@ app.use(express.static(frontendBuildPath));
 
 // Catch all handler: send back React's index.html file for client-side routing
 app.get('*', (req, res) => {
-  // Skip API routes
+  // Skip API routes - they should be handled by the API routes above
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ message: 'API route not found' });
   }
+  
+  // For non-API routes, serve the React app
   res.sendFile(path.join(frontendBuildPath, 'index.html'));
 });
 

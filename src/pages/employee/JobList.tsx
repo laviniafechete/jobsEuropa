@@ -223,30 +223,36 @@ export default function JobList() {
 
   // Contact options for guest users
   const handlePhoneContact = (job: Job) => {
-    // Use company's phone number if available, otherwise fallback to Jobs Europa
-    const phoneNumber = job.employer?.companyProfile?.phone || job.employer?.emailOrPhone || '+40757758647';
-    window.location.href = `tel:${phoneNumber}`;
+    // Only use company's phone number
+    const phoneNumber = job.employer?.companyProfile?.phone || job.employer?.emailOrPhone;
+    if (phoneNumber) {
+      window.location.href = `tel:${phoneNumber}`;
+    }
   };
 
   const handleWhatsAppContact = (job: Job) => {
-    // Use company's phone number if available, otherwise fallback to Jobs Europa
-    const phoneNumber = job.employer?.companyProfile?.phone || job.employer?.emailOrPhone || '40757758647';
-    const message = encodeURIComponent(`Bună ziua! Sunt interesat/ă de postul "${job.title}" din anunțul dumneavoastră.`);
-    window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
+    // Only use company's phone number
+    const phoneNumber = job.employer?.companyProfile?.phone || job.employer?.emailOrPhone;
+    if (phoneNumber) {
+      const message = encodeURIComponent(`Bună ziua! Sunt interesat/ă de postul "${job.title}" din anunțul dumneavoastră.`);
+      window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
+    }
   };
 
   const handleEmailContact = (job: Job) => {
-    // Use company's email if available, otherwise fallback to Jobs Europa
-    const email = job.employer?.companyProfile?.email || job.employer?.emailOrPhone || 'contact@jobs-europa.com';
-    const subject = encodeURIComponent(`Aplicare pentru ${job.title}`);
-    const body = encodeURIComponent(`Bună ziua,
+    // Only use company's email
+    const email = job.employer?.companyProfile?.email || job.employer?.emailOrPhone;
+    if (email) {
+      const subject = encodeURIComponent(`Aplicare pentru ${job.title}`);
+      const body = encodeURIComponent(`Bună ziua,
 
 Sunt interesat/ă de postul "${job.title}" din anunțul dumneavoastră.
 
 Vă rog să mă contactați pentru mai multe detalii.
 
 Cu stimă`);
-    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+      window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+    }
   };
 
   const toggleContactOptions = (jobId: string) => {
@@ -502,36 +508,10 @@ Cu stimă`);
                             </button>
                           )}
                           
-                          {/* Fallback to Jobs Europa if no company contact info */}
                           {!job.employer?.companyProfile?.phone && !job.employer?.companyProfile?.email && !job.employer?.emailOrPhone && (
-                            <>
-                              <div className="px-3 py-2 text-xs text-gray-500 border-t">
-                                Contact prin Jobs Europa:
-                              </div>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handlePhoneContact(job); }}
-                                className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md transition-colors text-left"
-                              >
-                                <Phone size={16} className="text-green-600" />
-                                <span className="text-sm">Sună Jobs Europa</span>
-                              </button>
-                              
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleWhatsAppContact(job); }}
-                                className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md transition-colors text-left"
-                              >
-                                <MessageCircle size={16} className="text-green-500" />
-                                <span className="text-sm">WhatsApp Jobs Europa</span>
-                              </button>
-                              
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleEmailContact(job); }}
-                                className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md transition-colors text-left"
-                              >
-                                <Mail size={16} className="text-blue-600" />
-                                <span className="text-sm">Email Jobs Europa</span>
-                              </button>
-                            </>
+                            <div className="px-3 py-2 text-xs text-gray-500 text-center">
+                              Nu sunt disponibile informații de contact
+                            </div>
                           )}
                         </div>
                       </div>

@@ -336,10 +336,7 @@ export default function JobList() {
             <JobCard
               key={job._id}
               job={job}
-              token={token || undefined}
-              onApply={handleApply}
-              onShowDetails={(job) => { setSelectedJob(job); setShowModal(true); }}
-              applying={applying[job._id]}
+              onClick={(job) => { setSelectedJob(job); setShowModal(true); }}
             />
           ))}
         </div>

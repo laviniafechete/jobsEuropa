@@ -12,7 +12,7 @@ const cardContent = {
       "Caută joburi în construcții, menaj, curățenie, îngrijire bătrâni și alte munci fizice. Creează-ți CV-ul, aplică rapid și primește recenzii de la angajatori.",
     icon: <User className="w-10 h-10 text-blue-600" />,
     button: "Descoperă noi joburi",
-    image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+    image: "../assets/images/candidat.jpg",
   },
   angajator: {
     title: "Acces Angajator",
@@ -21,7 +21,7 @@ const cardContent = {
     icon: <Building2 className="w-10 h-10 text-green-600" />,
     button: "Autentificare cu email",
     image:
-      "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=600&q=80",
+      "../assets/images/angajator.jpg",
   },
 };
 

@@ -71,7 +71,7 @@ const RouteWatcher = () => {
     
     // Clear localStorage when navigating to root or admin login
     if (currentPath === '/' || currentPath === '/admin' || currentPath === '/admin/login') {
-      console.log(`🧹 Clearing localStorage and cookies for route: ${currentPath}`);
+      console.log(`Clearing localStorage and cookies for route: ${currentPath}`);
       
       // Clear all cookies only when on root route
       if (currentPath === '/') {
@@ -84,7 +84,7 @@ const RouteWatcher = () => {
       // Also clear sessionStorage
       sessionStorage.clear();
       
-      console.log('✅ LocalStorage and SessionStorage completely cleared' + (currentPath === '/' ? ' and cookies cleared' : ''));
+      console.log('LocalStorage and SessionStorage completely cleared' + (currentPath === '/' ? ' and cookies cleared' : ''));
     }
   }, [location.pathname]);
 

@@ -291,7 +291,7 @@ export default function PrivacyPolicy() {
           
           <div className="grid md:grid-cols-2 gap-6">
             <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-blue-700 mb-2">📧 Contact Direct</h3>
+              <h3 className="font-semibold text-blue-700 mb-2">Contact Direct</h3>
               <p className="text-sm mb-2"><strong>Email:</strong> contact@jobs-europa.com</p>
               <p className="text-sm mb-2"><strong>Telefon:</strong> +40 757 758 647</p>
               <p className="text-sm mb-2"><strong>Răspuns în:</strong> maximum 30 zile</p>

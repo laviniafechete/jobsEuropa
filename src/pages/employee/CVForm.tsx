@@ -45,27 +45,21 @@ const levelOptions = [
   { value: "nativ", label: "Nativ" },
 ];
 
-const interestDomains = [
-  { value: "constructii", label: "🧱 Construcții și amenajări" },
-  { value: "electricitate", label: "🔌 Electricitate și instalații" },
-  { value: "mecanica", label: "🛠️ Mecanică / Service auto" },
-  { value: "transport", label: "🚛 Transport și livrări (curierat, șoferi)" },
-  { value: "logistica", label: "📦 Logistică și depozit" },
-  { value: "curatenie", label: "🧼 Curățenie și întreținere" },
-  { value: "horeca", label: "👩‍🍳 Horeca (bucătari, ospătari, hotel)" },
-  { value: "bone", label: "👶 Bone / Îngrijire copii" },
-  { value: "ingrijire-batrani", label: "👵 Îngrijire bătrâni / Asistență la domiciliu" },
-  { value: "agricultura", label: "🌾 Agricultură și muncă sezonieră" },
-  { value: "menaj", label: "🏠 Menaj la domiciliu / Intern" },
-  { value: "confectii", label: "🧵 Confecții textile / Croitorie" },
-  { value: "necalificat", label: "🧰 Muncă necalificată / Ajutor general" },
-  { value: "sudura", label: "🧑‍🏭 Sudură și prelucrări metal" },
-  { value: "comert", label: "🛍️ Comerț / Casierie / Retail" },
-  { value: "it", label: "🖥️ IT / Tehnologie" },
-  { value: "call-center", label: "📞 Call center / Lucru de birou" },
-  { value: "educatie", label: "📚 Educație / Meditații" },
-  { value: "artizanat", label: "🎨 Lucru manual / Artizanat" },
-  { value: "remote", label: "📤 Lucru de acasă / Remote" },
+const DOMAINS = [
+  { value: "", label: "Toate domeniile" },
+  { value: "constructii", label: "Construcții" },
+  { value: "menaj", label: "Menaj / Curățenie" },
+  { value: "ingrijire", label: "Îngrijire bătrâni / Copii" },
+  { value: "agricultura", label: "Agricultură / Grădinărit" },
+  { value: "transport", label: "Transport / Livrări" },
+  { value: "sudura", label: "Sudură și prelucrări metal" },
+  { value: "comert", label: "Comerț / Casierie / Retail" },
+  { value: "it", label: "IT / Tehnologie" },
+  { value: "call-center", label: "Call center / Lucru de birou" },
+  { value: "educatie", label: "Educație / Meditații" },
+  { value: "sanatate", label: "Sănătate / Farmacie" },
+  { value: "horeca", label: "HoReCa / Bucătărie" },
+  { value: "altele", label: "Altele" }
 ];
 
 export default function EmployeeCVForm() {
@@ -154,7 +148,7 @@ export default function EmployeeCVForm() {
   };
 
   const getInterestDomainLabel = (value: string) => {
-    const domain = interestDomains.find(d => d.value === value);
+    const domain = DOMAINS.find(d => d.value === value);
     return domain ? domain.label : value;
   };
 
@@ -316,7 +310,7 @@ export default function EmployeeCVForm() {
                     Domenii de interes (maxim 3)
                   </label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {interestDomains.map((domain) => (
+                    {DOMAINS.map((domain) => (
                       <label key={domain.value} className="flex items-center">
                         <input
                           type="checkbox"

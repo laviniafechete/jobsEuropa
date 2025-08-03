@@ -80,7 +80,7 @@ export default function JobList() {
 
   // Fetch jobs from API
   const fetchJobs = async (pageNum = 1, reset = false) => {
-    console.log(`🔍 fetchJobs called: page=${pageNum}, reset=${reset}`);
+    console.log(`fetchJobs called: page=${pageNum}, reset=${reset}`);
     try {
       const params = new URLSearchParams({
         page: pageNum.toString(),
@@ -123,7 +123,7 @@ export default function JobList() {
 
   // Load jobs on component mount and when filters change
   useEffect(() => {
-    console.log(`🔍 useEffect triggered: search="${search}", domain="${domain}", type="${type}"`);
+    console.log(`useEffect triggered: search="${search}", domain="${domain}", type="${type}"`);
     fetchJobs(1, true);
   }, [search, domain, type]);
 

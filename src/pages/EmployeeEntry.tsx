@@ -21,8 +21,8 @@ export default function EmployeeEntry() {
               onClick={() => navigate("/jobs")}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-lg transition duration-200 flex items-center justify-center"
             >
-              <span className="text-lg">🔍</span>
-              <span className="ml-2">Caută Joburi</span>
+              <span className="text-lg">Caută</span>
+              <span className="ml-2">Joburi</span>
             </button>
             
             <div className="grid grid-cols-2 gap-3">

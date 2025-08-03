@@ -38,28 +38,28 @@ export default function TermsAndConditions() {
           </p>
           <div className="grid md:grid-cols-2 gap-4 mb-4">
             <ul className="list-disc ml-6 space-y-1 text-sm">
-              <li>🧱 Construcții și amenajări</li>
-              <li>🔌 Electricitate și instalații</li>
-              <li>🛠️ Mecanică / Service auto</li>
-              <li>🚛 Transport și livrări</li>
-              <li>📦 Logistică și depozit</li>
-              <li>🧼 Curățenie și întreținere</li>
-              <li>👩‍🍳 Horeca (bucătari, ospătari, hotel)</li>
-              <li>👶 Bone / Îngrijire copii</li>
-              <li>👵 Îngrijire bătrâni</li>
-              <li>🌾 Agricultură și muncă sezonieră</li>
+              <li>Construcții și amenajări</li>
+              <li>Electricitate și instalații</li>
+              <li>Mecanică / Service auto</li>
+              <li>Transport și livrări</li>
+              <li>Logistică și depozit</li>
+              <li>Curățenie și întreținere</li>
+              <li>Horeca (bucătari, ospătari, hotel)</li>
+              <li>Bone / Îngrijire copii</li>
+              <li>Îngrijire bătrâni</li>
+              <li>Agricultură și muncă sezonieră</li>
             </ul>
             <ul className="list-disc ml-6 space-y-1 text-sm">
-              <li>🏠 Menaj la domiciliu / Intern</li>
-              <li>🧵 Confecții textile / Croitorie</li>
-              <li>🧰 Muncă necalificată / Ajutor general</li>
-              <li>🧑‍🏭 Sudură și prelucrări metal</li>
-              <li>🛍️ Comerț / Casierie / Retail</li>
-              <li>🖥️ IT / Tehnologie</li>
-              <li>📞 Call center / Lucru de birou</li>
-              <li>📚 Educație / Meditații</li>
-              <li>🎨 Lucru manual / Artizanat</li>
-              <li>📤 Lucru de acasă / Remote</li>
+              <li>Menaj la domiciliu / Intern</li>
+              <li>Confecții textile / Croitorie</li>
+              <li>Muncă necalificată / Ajutor general</li>
+              <li>Sudură și prelucrări metal</li>
+              <li>Comerț / Casierie / Retail</li>
+              <li>IT / Tehnologie</li>
+              <li>Call center / Lucru de birou</li>
+              <li>Educație / Meditații</li>
+              <li>Lucru manual / Artizanat</li>
+              <li>Lucru de acasă / Remote</li>
             </ul>
           </div>
         </section>
@@ -221,7 +221,7 @@ export default function TermsAndConditions() {
           
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <h3 className="text-lg font-medium mb-3 text-green-700">✅ PERMIS:</h3>
+              <h3 className="text-lg font-medium mb-3 text-green-700">PERMIS:</h3>
               <ul className="list-disc ml-6 space-y-1 text-sm">
                 <li>Utilizarea serviciilor conform destinației</li>
                 <li>Publicarea de conținut legal și relevant</li>
@@ -233,7 +233,7 @@ export default function TermsAndConditions() {
             </div>
             
             <div>
-              <h3 className="text-lg font-medium mb-3 text-red-700">❌ INTERZIS:</h3>
+              <h3 className="text-lg font-medium mb-3 text-red-700">INTERZIS:</h3>
               <ul className="list-disc ml-6 space-y-1 text-sm">
                 <li>Publicarea de conținut fals, misleading sau discriminatoriu</li>
                 <li>Hărțuirea, amenințarea sau intimidarea altor utilizatori</li>
@@ -453,7 +453,7 @@ export default function TermsAndConditions() {
           
           <div className="grid md:grid-cols-2 gap-6">
             <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-blue-700 mb-2">⚖️ Jurisdicție</h3>
+              <h3 className="font-semibold text-blue-700 mb-2">Jurisdicție</h3>
               <ul className="text-sm space-y-1">
                 <li><strong>Legea aplicabilă:</strong> Dreptul României</li>
                 <li><strong>Instanțe competente:</strong> Instanțele din România</li>
@@ -463,7 +463,7 @@ export default function TermsAndConditions() {
             </div>
             
             <div className="bg-green-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-green-700 mb-2">🤝 Soluționare Litigii</h3>
+              <h3 className="font-semibold text-green-700 mb-2">Soluționare Litigii</h3>
               <ol className="text-sm space-y-1 list-decimal ml-4">
                 <li>Încercarea de soluționare amiabilă (30 zile)</li>
                 <li>Mediere prin organizații acreditate</li>
@@ -486,7 +486,7 @@ export default function TermsAndConditions() {
           
           <div className="grid md:grid-cols-2 gap-6">
             <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-blue-700 mb-2">📧 Contact General</h3>
+              <h3 className="font-semibold text-blue-700 mb-2">Contact General</h3>
               <ul className="text-sm space-y-1">
                 <li><strong>Email:</strong> contact@jobs-europa.com</li>
                 <li><strong>Telefon:</strong> +40 757 758 647</li>
@@ -496,7 +496,7 @@ export default function TermsAndConditions() {
             </div>
             
             <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-gray-700 mb-2">🆘 Suport Specializat</h3>
+              <h3 className="font-semibold text-gray-700 mb-2">Suport Specializat</h3>
               <ul className="text-sm space-y-1">
                 <li><strong>Probleme tehnice:</strong> Subiect "TECH"</li>
                 <li><strong>Întrebări plăți:</strong> Subiect "BILLING"</li>

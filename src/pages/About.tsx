@@ -11,8 +11,8 @@ export default function About() {
           <p className="text-lg text-gray-700 mb-6">
             Jobs Europa este o platformă modernă, creată pentru a conecta rapid
             și sigur angajații și angajatorii din domenii precum construcții,
-            menaj, curățenie, îngrijire bătrâni și multe altele, atât în România
-            cât și în Belgia și Olanda.
+            menaj, curățenie, îngrijire bătrâni și multe altele, atât în România, Belgia Olanda, Germania,
+            Franta cât și în restul Europei.
           </p>
           <p className="text-gray-600 mb-4">
             Misiunea noastră este să simplificăm procesul de angajare, să oferim

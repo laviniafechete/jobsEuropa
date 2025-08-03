@@ -38,7 +38,7 @@ export default function CookiesPolicy() {
         <li><strong>Scop:</strong> Să nu îți mai afișăm banner-ul de cookies după ce ai făcut o alegere</li>
       </ul>
 
-      <h3 className="text-lg font-medium mt-4 mb-2">💬 Date temporare interfață (Necesare)</h3>
+      <h3 className="text-lg font-medium mt-4 mb-2">Date temporare interfață (Necesare)</h3>
       <ul className="list-disc ml-6 mb-4">
         <li><strong>snackbar-store:</strong> Mesajele de notificare afișate temporar</li>
         <li><strong>Scop:</strong> Să îți afișăm mesaje de confirmare, erori sau avertismente</li>
@@ -90,7 +90,7 @@ export default function CookiesPolicy() {
           </ul>
         </div>
         <div className="bg-green-50 p-4 rounded-lg">
-          <h4 className="font-semibold mb-2 text-green-800">✅ Opționale (le poți refuza)</h4>
+          <h4 className="font-semibold mb-2 text-green-800">Opționale (le poți refuza)</h4>
           <ul className="text-sm text-green-700">
             <li>• Preferințe cookies</li>
             <li>• Îmbunătățiri experiență utilizator</li>

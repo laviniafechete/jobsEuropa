@@ -1,4 +1,6 @@
 import { User, Building2 } from "lucide-react";
+import candidatImage from "../assets/angajat.jpg";
+import angajatorImage from "../assets/angajator.jpg";
 
 interface EntryCardProps {
   type: "candidat" | "angajator";
@@ -12,7 +14,7 @@ const cardContent = {
       "Caută joburi în construcții, menaj, curățenie, îngrijire bătrâni și alte munci fizice. Creează-ți CV-ul, aplică rapid și primește recenzii de la angajatori.",
     icon: <User className="w-10 h-10 text-blue-600" />,
     button: "Descoperă noi joburi",
-    image: "../assets/images/candidat.jpg",
+    image: candidatImage,
   },
   angajator: {
     title: "Acces Angajator",
@@ -20,8 +22,7 @@ const cardContent = {
       "Publică anunțuri, caută candidați potriviți și gestionează recenziile. O platformă creată special pentru angajatori care vor să găsească oameni de încredere.",
     icon: <Building2 className="w-10 h-10 text-green-600" />,
     button: "Autentificare cu email",
-    image:
-      "../assets/images/angajator.jpg",
+    image: angajatorImage,
   },
 };
 

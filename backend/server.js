@@ -27,33 +27,24 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// ===== ULTIMATE CORS FIX - MULTIPLE LOCATIONS =====
-console.log('🔥 ULTIMATE CORS FIX LOADED - TIMESTAMP:', new Date().toISOString());
-
-// Method 1: Pre-middleware headers
+// ===== SIMPLE CORS CONFIGURATION =====
 app.use((req, res, next) => {
-  console.log(`🔥 ULTIMATE CORS PRE: ${req.method} ${req.url} from origin: ${req.get('Origin') || 'none'}`);
+  const origin = req.get('Origin');
   
-  // Set headers multiple ways
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', '*');
-  res.setHeader('Access-Control-Allow-Headers', '*');
+  // Allow both www and non-www domains
+  if (origin && (origin.includes('jobs-europa.com') || origin.includes('localhost'))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Max-Age', '86400');
   
-  // Also set with res.header
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', '*');
-  res.header('Access-Control-Allow-Headers', '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  
-  console.log('🔥 ULTIMATE CORS headers set with BOTH setHeader and header');
-  
-  // Handle OPTIONS immediately
+  // Handle preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('🔥 ULTIMATE CORS: OPTIONS handled immediately');
-    res.status(200);
-    res.end();
+    res.status(200).end();
     return;
   }
   

@@ -223,24 +223,30 @@ export default function JobList() {
 
   // Contact options for guest users
   const handlePhoneContact = (job: Job) => {
-    window.location.href = `tel:+40757758647`;
+    // Use company's phone number if available, otherwise fallback to Jobs Europa
+    const phoneNumber = job.employer?.companyProfile?.phone || job.employer?.emailOrPhone || '+40757758647';
+    window.location.href = `tel:${phoneNumber}`;
   };
 
   const handleWhatsAppContact = (job: Job) => {
-    const message = encodeURIComponent(`Bună ziua! Sunt interesat/ă de postul "${job.title}" din anunțul dumneavoastră de pe Jobs Europa.`);
-    window.open(`https://wa.me/40757758647?text=${message}`, '_blank');
+    // Use company's phone number if available, otherwise fallback to Jobs Europa
+    const phoneNumber = job.employer?.companyProfile?.phone || job.employer?.emailOrPhone || '40757758647';
+    const message = encodeURIComponent(`Bună ziua! Sunt interesat/ă de postul "${job.title}" din anunțul dumneavoastră.`);
+    window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
   };
 
   const handleEmailContact = (job: Job) => {
+    // Use company's email if available, otherwise fallback to Jobs Europa
+    const email = job.employer?.companyProfile?.email || job.employer?.emailOrPhone || 'contact@jobs-europa.com';
     const subject = encodeURIComponent(`Aplicare pentru ${job.title}`);
     const body = encodeURIComponent(`Bună ziua,
 
-Sunt interesat/ă de postul "${job.title}" din anunțul dumneavoastră de pe Jobs Europa.
+Sunt interesat/ă de postul "${job.title}" din anunțul dumneavoastră.
 
 Vă rog să mă contactați pentru mai multe detalii.
 
 Cu stimă`);
-    window.location.href = `mailto:contact@jobs-europa.com?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
   };
 
   const toggleContactOptions = (jobId: string) => {
@@ -459,36 +465,74 @@ Cu stimă`);
                       style={{ minWidth: 180 }}
                     >
                       <MessageCircle size={16} />
-                      Contactează-ne
+                      Contactează
                       <ArrowRight size={16} className={`transform transition-transform ${showContactOptions[job._id] ? 'rotate-90' : ''}`} />
                     </button>
                     
                     {showContactOptions[job._id] && (
                       <div className="absolute top-full left-0 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                         <div className="p-2 space-y-1">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handlePhoneContact(job); }}
-                            className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md transition-colors text-left"
-                          >
-                            <Phone size={16} className="text-green-600" />
-                            <span className="text-sm">Sună acum</span>
-                          </button>
+                          {job.employer?.companyProfile?.phone && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handlePhoneContact(job); }}
+                              className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md transition-colors text-left"
+                            >
+                              <Phone size={16} className="text-green-600" />
+                              <span className="text-sm">Sună {job.employer.companyName}</span>
+                            </button>
+                          )}
                           
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleWhatsAppContact(job); }}
-                            className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md transition-colors text-left"
-                          >
-                            <MessageCircle size={16} className="text-green-500" />
-                            <span className="text-sm">WhatsApp</span>
-                          </button>
+                          {(job.employer?.companyProfile?.phone || job.employer?.emailOrPhone) && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleWhatsAppContact(job); }}
+                              className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md transition-colors text-left"
+                            >
+                              <MessageCircle size={16} className="text-green-500" />
+                              <span className="text-sm">WhatsApp {job.employer.companyName}</span>
+                            </button>
+                          )}
                           
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleEmailContact(job); }}
-                            className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md transition-colors text-left"
-                          >
-                            <Mail size={16} className="text-blue-600" />
-                            <span className="text-sm">Trimite email</span>
-                          </button>
+                          {(job.employer?.companyProfile?.email || job.employer?.emailOrPhone) && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleEmailContact(job); }}
+                              className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md transition-colors text-left"
+                            >
+                              <Mail size={16} className="text-blue-600" />
+                              <span className="text-sm">Email {job.employer.companyName}</span>
+                            </button>
+                          )}
+                          
+                          {/* Fallback to Jobs Europa if no company contact info */}
+                          {!job.employer?.companyProfile?.phone && !job.employer?.companyProfile?.email && !job.employer?.emailOrPhone && (
+                            <>
+                              <div className="px-3 py-2 text-xs text-gray-500 border-t">
+                                Contact prin Jobs Europa:
+                              </div>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handlePhoneContact(job); }}
+                                className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md transition-colors text-left"
+                              >
+                                <Phone size={16} className="text-green-600" />
+                                <span className="text-sm">Sună Jobs Europa</span>
+                              </button>
+                              
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleWhatsAppContact(job); }}
+                                className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md transition-colors text-left"
+                              >
+                                <MessageCircle size={16} className="text-green-500" />
+                                <span className="text-sm">WhatsApp Jobs Europa</span>
+                              </button>
+                              
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleEmailContact(job); }}
+                                className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md transition-colors text-left"
+                              >
+                                <Mail size={16} className="text-blue-600" />
+                                <span className="text-sm">Email Jobs Europa</span>
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                     )}

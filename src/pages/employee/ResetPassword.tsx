@@ -75,6 +75,9 @@ const EmployeeResetPassword: React.FC = () => {
       
       if (data.success) {
         showSuccess('Parola a fost schimbată cu succes!');
+        localStorage.removeItem('token');
+        localStorage.removeItem('userType');
+        sessionStorage.clear();
         setTimeout(() => {
           navigate('/employee/login');
         }, 2000);

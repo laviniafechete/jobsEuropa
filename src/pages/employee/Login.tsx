@@ -170,7 +170,19 @@ export default function Login() {
         : FACEBOOK_OAUTH_URL;
   };
 
-  // Elimină complet useEffect-ul care preia tokenul din URL și face login automat la redirect OAuth
+  // Prevent redirect to home if on reset-password page
+  useEffect(() => {
+    if (
+      window.location.pathname === '/employee/reset-password' ||
+      window.location.pathname.startsWith('/employee/reset-password')
+    ) {
+      // Do not redirect
+      return;
+    }
+    // Existing logic (if any) for redirecting authenticated users
+    // Example:
+    // if (token) navigate('/employee/home');
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center px-4">

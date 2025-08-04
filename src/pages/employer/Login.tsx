@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { authAPI } from '../../services/api';
@@ -14,6 +14,20 @@ const EmployerLogin: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuthStore();
   const { showSuccess, showError } = useSnackbar();
+
+  // Prevent redirect to home if on reset-password page
+  useEffect(() => {
+    if (
+      window.location.pathname === '/employer/reset-password' ||
+      window.location.pathname.startsWith('/employer/reset-password')
+    ) {
+      // Do not redirect
+      return;
+    }
+    // Existing logic (if any) for redirecting authenticated users
+    // Example:
+    // if (token) navigate('/employer/home');
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({

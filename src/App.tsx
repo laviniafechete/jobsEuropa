@@ -167,6 +167,7 @@ function App() {
                 <Route path="/employee/register" element={<EmployeeRegister />} />
                 <Route path="/employee/verify-email" element={<EmployeeVerifyEmail />} />
                 <Route path="/employee/reset-password" element={<EmployeeResetPassword />} />
+                <Route path="/user/reset-password" element={<EmployeeResetPassword />} />
                 <Route path="/employee/oauth-success" element={<OAuthSuccess />} />
                 
                 <Route 

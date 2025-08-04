@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { authAPI } from '../../services/api';
 import { useSnackbar } from '../../hooks/useSnackbar';
 import PhoneInput from '../../components/PhoneInput';
+import { getApiUrl } from '../../config/env';
 
 const EmployerResetPassword: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -33,7 +34,7 @@ const EmployerResetPassword: React.FC = () => {
 
   const verifyToken = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/auth/verify-reset-token/employer/${token}`);
+      const response = await fetch(`${getApiUrl('/auth/verify-reset-token/employer')}/${token}`);
       const data = await response.json();
       
       if (data.success) {
@@ -63,7 +64,7 @@ const EmployerResetPassword: React.FC = () => {
     
     setIsChangingPassword(true);
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/auth/change-password-with-token/employer/${token}`, {
+      const response = await fetch(`${getApiUrl('/auth/change-password-with-token/employer')}/${token}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

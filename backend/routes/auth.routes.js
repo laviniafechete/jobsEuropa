@@ -3,7 +3,7 @@ import { registerUser, verifyPhoneRegistration } from "../controllers/registerUs
 import { loginUser, verifySmsCode } from "../controllers/loginUser.js";
 import { registerEmployer } from "../controllers/registerEmployer.js";
 import { loginEmployer } from "../controllers/loginEmployer.js";
-import { resetPassword } from "../controllers/resetPassword.js";
+import { resetPassword, verifyResetToken, changePasswordWithToken } from "../controllers/resetPassword.js";
 import { verifyEmail, verifyEmailByUserId, getVerificationToken, generateTestToken } from "../controllers/verifyEmail.js";
 import { getUserInfo } from "../controllers/getUserInfo.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
@@ -21,6 +21,8 @@ router.post("/verify-sms", verifySmsCode);
 router.post("/register-employer", registerEmployer);
 router.post("/login-employer", loginEmployer);
 router.post("/reset-password", resetPassword);
+router.get("/verify-reset-token/:userType/:token", verifyResetToken);
+router.post("/change-password-with-token/:userType/:token", changePasswordWithToken);
 router.get("/verify-email/:userType/:token", verifyEmail);
 router.get("/verify-email-manual/:userType/:userId", verifyEmailByUserId); // Temporary for testing
 router.get("/debug-token/:userType/:userId", getVerificationToken); // Temporary for debugging

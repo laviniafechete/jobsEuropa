@@ -3,7 +3,7 @@ import Employer from "../models/Employer.js";
 import { asyncHandler, sendSuccess, sendError } from "../utils/errorHandler.js";
 import { validateEmail } from "../utils/validation.js";
 import { sendResetEmail, sendResetSms } from "./sendEmail.js";
-// Presupunem că vei crea o funcție sendResetSms în sendEmail.js sau un alt util
+import crypto from 'crypto';
 
 export const resetPassword = asyncHandler(async (req, res) => {
   const { email, phone, userType } = req.body;
@@ -57,6 +57,71 @@ export const resetPassword = asyncHandler(async (req, res) => {
     await user.save();
     return sendError(res, email ? "Eroare la trimiterea email-ului" : "Eroare la trimiterea SMS-ului", 500);
   }
+});
+
+export const verifyResetToken = asyncHandler(async (req, res) => {
+  const { token, userType } = req.params;
+
+  if (!token || !userType) {
+    return sendError(res, "Token și tipul utilizatorului sunt obligatorii", 400);
+  }
+
+  if (!['user', 'employer'].includes(userType)) {
+    return sendError(res, "Tip utilizator invalid", 400);
+  }
+
+  // Hash the token
+  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+  let Model = userType === 'user' ? User : Employer;
+  const user = await Model.findOne({
+    resetPasswordToken: hashedToken,
+    resetPasswordExpires: { $gt: Date.now() }
+  });
+
+  if (!user) {
+    return sendError(res, "Token invalid sau expirat", 400);
+  }
+
+  sendSuccess(res, { valid: true }, "Token valid");
+});
+
+export const changePasswordWithToken = asyncHandler(async (req, res) => {
+  const { token, userType } = req.params;
+  const { newPassword } = req.body;
+
+  if (!token || !userType || !newPassword) {
+    return sendError(res, "Token, tipul utilizatorului și parola nouă sunt obligatorii", 400);
+  }
+
+  if (!['user', 'employer'].includes(userType)) {
+    return sendError(res, "Tip utilizator invalid", 400);
+  }
+
+  if (newPassword.length < 6) {
+    return sendError(res, "Parola trebuie să aibă minim 6 caractere", 400);
+  }
+
+  // Hash the token
+  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+  let Model = userType === 'user' ? User : Employer;
+  const user = await Model.findOne({
+    resetPasswordToken: hashedToken,
+    resetPasswordExpires: { $gt: Date.now() }
+  });
+
+  if (!user) {
+    return sendError(res, "Token invalid sau expirat", 400);
+  }
+
+  // Change password
+  user.password = newPassword;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpires = undefined;
+  await user.save();
+
+  sendSuccess(res, null, "Parola a fost schimbată cu succes");
 });
 
 export const changeEmployerPassword = asyncHandler(async (req, res) => {

@@ -6,6 +6,23 @@ import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../../config/env";
 import PhoneInput from '../../components/PhoneInput';
 
+const DOMAINS = [
+  { value: "", label: "Selectează domeniul de activitate" },
+  { value: "constructii", label: "Construcții" },
+  { value: "menaj", label: "Menaj / Curățenie" },
+  { value: "ingrijire", label: "Îngrijire bătrâni / Copii" },
+  { value: "agricultura", label: "Agricultură / Grădinărit" },
+  { value: "transport", label: "Transport / Livrări" },
+  { value: "sudura", label: "Sudură și prelucrări metal" },
+  { value: "comert", label: "Comerț / Casierie / Retail" },
+  { value: "it", label: "IT / Tehnologie" },
+  { value: "call-center", label: "Call center / Lucru de birou" },
+  { value: "educatie", label: "Educație / Meditații" },
+  { value: "sanatate", label: "Sănătate / Farmacie" },
+  { value: "horeca", label: "HoReCa / Bucătărie" },
+  { value: "altele", label: "Altele" }
+];
+
 type Company = {
   name: string;
   cui: string;
@@ -16,7 +33,7 @@ type Company = {
   contactPerson?: string;
   position?: string;
   email?: string;
-  phone?: string;
+  phone?: { prefix: string; number: string } | string;
   website?: string;
 };
 
@@ -72,7 +89,7 @@ export default function CompanyForm({ onSuccess = () => {}, initialData, onSave 
   }, [initialData]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -93,9 +110,10 @@ export default function CompanyForm({ onSuccess = () => {}, initialData, onSave 
       return;
     }
     try {
+      const phoneString = typeof form.phone === 'string' ? form.phone : `${form.phone?.prefix || '+40'}${form.phone?.number || ''}`;
       const payload = {
         ...form,
-        phone: form.phone.prefix + form.phone.number,
+        phone: phoneString,
       };
       const response = await fetch(`${API_BASE_URL}/employer/save-profile`, {
         method: "POST",
@@ -186,7 +204,7 @@ export default function CompanyForm({ onSuccess = () => {}, initialData, onSave 
         />
         <PhoneInput
           label="Telefon (WhatsApp)"
-          value={typeof form.phone === 'string' ? { prefix: form.phone.substring(0, 3) || '+40', number: form.phone.substring(3) || '' } : form.phone}
+          value={typeof form.phone === 'string' ? { prefix: form.phone.substring(0, 3) || '+40', number: form.phone.substring(3) || '' } : (form.phone || { prefix: '+40', number: '' })}
           onChange={val => setForm({ ...form, phone: val })}
           required
         />
@@ -197,14 +215,19 @@ export default function CompanyForm({ onSuccess = () => {}, initialData, onSave 
           value={(form as any).website || ""}
           onChange={handleChange}
         />
-        <input
+        <select
           name="domain"
           className="border rounded-lg px-4 py-2"
-          placeholder="Domeniul de activitate"
           value={form.domain}
           onChange={handleChange}
           required
-        />
+        >
+          {DOMAINS.map((domain) => (
+            <option key={domain.value} value={domain.value}>
+              {domain.label}
+            </option>
+          ))}
+        </select>
         <textarea
           name="description"
           className="border rounded-lg px-4 py-2"

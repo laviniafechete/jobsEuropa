@@ -1,17 +1,260 @@
 import { useAuthStore } from "../../stores/authStore";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSnackbar } from "../../hooks/useSnackbar";
 import { API_BASE_URL } from "../../config/env";
+import { 
+  Building2, 
+  Edit, 
+  Save, 
+  X,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Globe,
+  FileText,
+  Lock
+} from "lucide-react";
+import PhoneInput from '../../components/PhoneInput';
+
+const DOMAINS = [
+  { value: "", label: "Selectează domeniul de activitate" },
+  { value: "constructii", label: "Construcții" },
+  { value: "menaj", label: "Menaj / Curățenie" },
+  { value: "ingrijire", label: "Îngrijire bătrâni / Copii" },
+  { value: "agricultura", label: "Agricultură / Grădinărit" },
+  { value: "transport", label: "Transport / Livrări" },
+  { value: "sudura", label: "Sudură și prelucrări metal" },
+  { value: "comert", label: "Comerț / Casierie / Retail" },
+  { value: "it", label: "IT / Tehnologie" },
+  { value: "call-center", label: "Call center / Lucru de birou" },
+  { value: "educatie", label: "Educație / Meditații" },
+  { value: "sanatate", label: "Sănătate / Farmacie" },
+  { value: "horeca", label: "HoReCa / Bucătărie" },
+  { value: "altele", label: "Altele" }
+];
+
+const getDomainLabel = (value: string) => {
+  const option = DOMAINS.find(opt => opt.value === value);
+  return option ? option.label : value;
+};
 
 export default function EmployerProfile() {
-  const { token } = useAuthStore();
+  const { token, employer, updateEmployer } = useAuthStore();
   const navigate = useNavigate();
   const { showSuccess, showError } = useSnackbar();
+  
+  // Password change states
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changing, setChanging] = useState(false);
+  
+  // Profile editing states
+  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [companyData, setCompanyData] = useState<any>(null);
+  const [isLoadingCompany, setIsLoadingCompany] = useState(false);
+  const hasLoadedCompany = useRef(false);
+  
+  const [formData, setFormData] = useState({
+    name: "",
+    cui: "",
+    location: "",
+    domain: "",
+    description: "",
+    contactPerson: "",
+    position: "",
+    email: "",
+    phone: { prefix: '+40', number: '' },
+    website: ""
+  });
+
+  useEffect(() => {
+    // Load company data if employer has completed profile and we haven't loaded it yet
+    if (employer?.hasProfileCompleted && !hasLoadedCompany.current && !isLoadingCompany) {
+      loadCompanyData();
+    }
+  }, [employer]);
+
+  const loadCompanyData = async () => {
+    if (!token || isLoadingCompany || hasLoadedCompany.current) return;
+    
+    setIsLoadingCompany(true);
+    hasLoadedCompany.current = true;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/employer/profile`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCompanyData(data.data.companyProfile);
+        
+        // Pre-populate form with existing data
+        if (data.data.companyProfile) {
+          const company = data.data.companyProfile;
+          
+          // Parse phone number
+          let phoneData = { prefix: '+40', number: '' };
+          if (company.phone) {
+            const phone = company.phone;
+            if (phone.startsWith('+40')) {
+              phoneData = {
+                prefix: '+40',
+                number: phone.substring(3)
+              };
+            } else if (phone.startsWith('40')) {
+              phoneData = {
+                prefix: '+40',
+                number: phone.substring(2)
+              };
+            } else {
+              phoneData = {
+                prefix: '+40',
+                number: phone
+              };
+            }
+          }
+          
+          setFormData({
+            name: company.name || "",
+            cui: company.cui || "",
+            location: company.location || "",
+            domain: company.domain || "",
+            description: company.description || "",
+            contactPerson: company.contactPerson || "",
+            position: company.position || "",
+            email: company.email || "",
+            phone: phoneData,
+            website: company.website || ""
+          });
+        }
+      } else {
+        console.error("Failed to load company data:", response.status);
+      }
+    } catch (error) {
+      console.error("Error loading company data:", error);
+    } finally {
+      setIsLoadingCompany(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSave = async () => {
+    if (isLoading) return;
+    
+    if (!token) {
+      showError("Nu ești autentificat. Te rugăm să te loghezi din nou.");
+      navigate("/employer/login");
+      return;
+    }
+    
+    setIsLoading(true);
+
+    try {
+      const phoneString = `${formData.phone.prefix}${formData.phone.number}`;
+      const payload = {
+        ...formData,
+        phone: phoneString,
+      };
+
+      const response = await fetch(`${API_BASE_URL}/employer/save-profile`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.error?.message?.includes("token")) {
+          showError("Sesiunea a expirat. Te rugăm să te loghezi din nou.");
+          navigate("/employer/login");
+          return;
+        }
+        throw new Error(errorData.message || "Eroare la salvarea profilului");
+      }
+
+      const result = await response.json();
+      
+      // Update employer in store
+      if (updateEmployer) {
+        updateEmployer({ 
+          ...employer, 
+          hasProfileCompleted: true,
+          companyProfile: result.data
+        });
+      }
+      
+      // Reset company loading flag to allow reload
+      hasLoadedCompany.current = false;
+      
+      // Reload company data
+      await loadCompanyData();
+      
+      showSuccess("Profilul companiei a fost actualizat cu succes!");
+      setIsEditing(false);
+    } catch (error: any) {
+      showError(error.message || "Eroare la salvarea profilului. Vă rugăm încercați din nou.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    // Reset form data to original values
+    if (companyData) {
+      // Parse phone number
+      let phoneData = { prefix: '+40', number: '' };
+      if (companyData.phone) {
+        const phone = companyData.phone;
+        if (phone.startsWith('+40')) {
+          phoneData = {
+            prefix: '+40',
+            number: phone.substring(3)
+          };
+        } else if (phone.startsWith('40')) {
+          phoneData = {
+            prefix: '+40',
+            number: phone.substring(2)
+          };
+        } else {
+          phoneData = {
+            prefix: '+40',
+            number: phone
+          };
+        }
+      }
+      
+      setFormData({
+        name: companyData.name || "",
+        cui: companyData.cui || "",
+        location: companyData.location || "",
+        domain: companyData.domain || "",
+        description: companyData.description || "",
+        contactPerson: companyData.contactPerson || "",
+        position: companyData.position || "",
+        email: companyData.email || "",
+        phone: phoneData,
+        website: companyData.website || ""
+      });
+    }
+  };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,40 +294,379 @@ export default function EmployerProfile() {
     }
   };
 
-  return (
-    <div className="max-w-lg mx-auto bg-white rounded-xl shadow-lg p-8 mt-20 pt-24">
-      <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-        <span className="inline-block bg-green-100 p-2 rounded-full mr-2">
-          <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M3 21V7a2 2 0 0 1 2-2h3V3h4v2h3a2 2 0 0 1 2 2v14H3Z" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 21v-4a2 2 0 0 0-2-2H10a2 2 0 0 0-2 2v4" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </span>
-        Schimbă parola
-      </h2>
-      <div className="flex gap-2 mb-8">
-        <button
-          className="ml-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded"
-          onClick={() => navigate("/employer/home")}
-        >
-          &larr; Înapoi la home
-        </button>
+  if (!employer) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Se încarcă...</p>
+        </div>
       </div>
-      <form className="bg-gray-50 border rounded p-4 mb-6" onSubmit={handleChangePassword}>
-        <h3 className="font-bold mb-2">Schimbă parola</h3>
-        <div className="mb-2">
-          <label className="block text-sm font-medium mb-1">Parola veche</label>
-          <input type="password" className="border rounded px-2 py-1 w-full" value={oldPassword} onChange={e => setOldPassword(e.target.value)} required />
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 pt-20">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <Building2 className="w-8 h-8 text-green-600" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">{employer.companyName}</h1>
+                <p className="text-gray-600">{employer.email}</p>
+                <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    employer.hasProfileCompleted 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {employer.hasProfileCompleted ? 'Profil Completat' : 'Profil Incomplet'}
+                  </span>
+                  <span>Membru din {new Date(employer.createdAt).toLocaleDateString('ro-RO')}</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              {!isEditing ? (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
+                >
+                  <Edit className="w-4 h-4" />
+                  Editează profilul
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={handleCancel}
+                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                  >
+                    <X className="w-4 h-4" />
+                    Anulează
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    disabled={isLoading}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition disabled:opacity-50"
+                  >
+                    <Save className="w-4 h-4" />
+                    {isLoading ? "Se salvează..." : "Salvează"}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
         </div>
-        <div className="mb-2">
-          <label className="block text-sm font-medium mb-1">Parola nouă</label>
-          <input type="password" className="border rounded px-2 py-1 w-full" value={newPassword} onChange={e => setNewPassword(e.target.value)} required minLength={6} />
+
+        {/* Profile Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Company Information */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-green-600" />
+                Informații companie
+              </h2>
+              
+              {isEditing ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Denumirea firmei
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="Denumirea firmei"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        CUI / BCE
+                      </label>
+                      <input
+                        type="text"
+                        name="cui"
+                        value={formData.cui}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                        placeholder="Număr de înregistrare"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Domeniul de activitate
+                      </label>
+                      <select
+                        name="domain"
+                        value={formData.domain}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                        required
+                      >
+                        {DOMAINS.map((domain) => (
+                          <option key={domain.value} value={domain.value}>
+                            {domain.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Adresa sediului
+                    </label>
+                    <input
+                      type="text"
+                      name="location"
+                      value={formData.location}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="Adresa sediului"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Descriere companie
+                    </label>
+                    <textarea
+                      name="description"
+                      value={formData.description}
+                      onChange={handleInputChange}
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="Descriere scurtă companie"
+                      required
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {companyData?.name && (
+                    <div>
+                      <h3 className="font-medium text-gray-900 mb-2">Denumirea firmei</h3>
+                      <p className="text-gray-700">{companyData.name}</p>
+                    </div>
+                  )}
+                  {companyData?.cui && (
+                    <div>
+                      <h3 className="font-medium text-gray-900 mb-2">CUI / BCE</h3>
+                      <p className="text-gray-700">{companyData.cui}</p>
+                    </div>
+                  )}
+                  {companyData?.domain && (
+                    <div>
+                      <h3 className="font-medium text-gray-900 mb-2">Domeniul de activitate</h3>
+                      <p className="text-gray-700">{getDomainLabel(companyData.domain)}</p>
+                    </div>
+                  )}
+                  {companyData?.location && (
+                    <div>
+                      <h3 className="font-medium text-gray-900 mb-2">Adresa sediului</h3>
+                      <p className="text-gray-700">{companyData.location}</p>
+                    </div>
+                  )}
+                  {companyData?.description && (
+                    <div>
+                      <h3 className="font-medium text-gray-900 mb-2">Descriere companie</h3>
+                      <p className="text-gray-700">{companyData.description}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Contact Information */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <User className="w-5 h-5 text-green-600" />
+                Informații contact
+              </h2>
+              
+              {isEditing ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Persoană de contact
+                    </label>
+                    <input
+                      type="text"
+                      name="contactPerson"
+                      value={formData.contactPerson}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="Nume și prenume"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Funcția în firmă
+                    </label>
+                    <input
+                      type="text"
+                      name="position"
+                      value={formData.position}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="ex: HR, Manager, Admin"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email de contact
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="Email de contact"
+                    />
+                  </div>
+                  
+                  <PhoneInput
+                    label="Telefon (WhatsApp)"
+                    value={formData.phone}
+                    onChange={val => setFormData({ ...formData, phone: val })}
+                    required
+                  />
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Website
+                    </label>
+                    <input
+                      type="url"
+                      name="website"
+                      value={formData.website}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="Website (opțional)"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Mail className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-700">{employer.email}</span>
+                  </div>
+                  {companyData?.phone && (
+                    <div className="flex items-center gap-3">
+                      <Phone className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-700">{companyData.phone}</span>
+                    </div>
+                  )}
+                  {companyData?.contactPerson && (
+                    <div className="flex items-center gap-3">
+                      <User className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-700">{companyData.contactPerson}</span>
+                    </div>
+                  )}
+                  {companyData?.position && (
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-700">{companyData.position}</span>
+                    </div>
+                  )}
+                  {companyData?.website && (
+                    <div className="flex items-center gap-3">
+                      <Globe className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-700">{companyData.website}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-        <div className="mb-2">
-          <label className="block text-sm font-medium mb-1">Confirmă parola nouă</label>
-          <input type="password" className="border rounded px-2 py-1 w-full" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required minLength={6} />
+
+        {/* Password Change Section */}
+        <div className="mt-6 bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Lock className="w-5 h-5 text-green-600" />
+            Schimbă parola
+          </h2>
+          <form className="bg-gray-50 border rounded p-4" onSubmit={handleChangePassword}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Parola veche</label>
+                <input 
+                  type="password" 
+                  className="border rounded px-3 py-2 w-full" 
+                  value={oldPassword} 
+                  onChange={e => setOldPassword(e.target.value)} 
+                  required 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Parola nouă</label>
+                <input 
+                  type="password" 
+                  className="border rounded px-3 py-2 w-full" 
+                  value={newPassword} 
+                  onChange={e => setNewPassword(e.target.value)} 
+                  required 
+                  minLength={6} 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Confirmă parola nouă</label>
+                <input 
+                  type="password" 
+                  className="border rounded px-3 py-2 w-full" 
+                  value={confirmPassword} 
+                  onChange={e => setConfirmPassword(e.target.value)} 
+                  required 
+                  minLength={6} 
+                />
+              </div>
+            </div>
+            <button 
+              type="submit" 
+              className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded mt-4" 
+              disabled={changing}
+            >
+              {changing ? "Se schimbă..." : "Schimbă parola"}
+            </button>
+          </form>
         </div>
-        <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded mt-2" disabled={changing}>
-          {changing ? "Se schimbă..." : "Schimbă parola"}
-        </button>
-      </form>
+
+        {/* Action Buttons */}
+        <div className="mt-6 flex justify-center gap-4">
+          <button
+            onClick={() => navigate("/employer/home")}
+            className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
+          >
+            Pagina principală
+          </button>
+          <button
+            onClick={() => navigate("/employer/post-job")}
+            className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+          >
+            Postează job
+          </button>
+        </div>
+      </div>
     </div>
   );
 } 

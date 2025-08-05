@@ -7,36 +7,62 @@ const PLAN_OPTIONS = [
   {
     key: 'trial',
     title: 'Trial',
-    price: 'Gratuit (3 zile)',
+    price: 'Gratuit (15 zile)',
     features: [
-      '1 job postat',
-      '3 candidați accesați',
-      'Fără suport prioritar'
+      '1 anunț (vizibilitate 15 zile)',
+      'Contact direct cu aplicanții',
+      'Statistici de bază - vizualizări per anunț'
     ],
     disabled: true
   },
   {
     key: 'basic',
     title: 'Basic',
-    price: <><span className="line-through text-gray-400 mr-2">12€</span><span className="text-green-700 font-bold">9.99€</span><span className="text-sm text-gray-500">/lună</span></>,
+    price: <><span className="line-through text-gray-400 mr-2">$100</span><span className="text-green-700 font-bold">$49.99</span><span className="text-sm text-gray-500">/lună</span></>,
     features: [
-      '10 joburi active',
+      '5 anunțuri (vizibilitate 30 zile)',
+      'Contact direct cu aplicanții',
+      'Statistici de bază - vizualizări per anunț',
       'Acces la toți candidații',
-      'Suport standard'
+      'Suport'
     ],
     priceId: 'price_1NxxxBasic'
   },
   {
     key: 'premium',
     title: 'Premium',
-    price: <><span className="line-through text-gray-400 mr-2">20€</span><span className="text-green-700 font-bold">15.99€</span><span className="text-sm text-gray-500">/lună</span></>,
+    price: <><span className="line-through text-gray-400 mr-2">$300</span><span className="text-green-700 font-bold">$199.99</span><span className="text-sm text-gray-500">/lună</span></>,
     features: [
-      'Joburi nelimitate',
+      'Anunțuri nelimitate (vizibilitate 30 zile)',
+      'Contact direct cu aplicanții',
+      'Statistici extinse',
       'Acces la toți candidații',
       'Suport prioritar',
-      'Promovare joburi'
+      'Trimitere anunț la toți abonații site-ului'
     ],
     priceId: 'price_1NxxxPremium'
+  },
+  {
+    key: 'single',
+    title: 'Anunț Unic',
+    price: <><span className="line-through text-gray-400 mr-2">$30</span><span className="text-green-700 font-bold">$14.99</span><span className="text-sm text-gray-500">/o dată</span></>,
+    features: [
+      '1 anunț (vizibilitate 30 zile)',
+      'Contact direct cu aplicanții',
+      'Statistici de bază - vizualizări per anunț'
+    ],
+    priceId: 'price_1NxxxSingle'
+  },
+  {
+    key: 'promotion',
+    title: 'Promovare',
+    price: <><span className="line-through text-gray-400 mr-2">$20</span><span className="text-green-700 font-bold">$9.99</span><span className="text-sm text-gray-500">/anunț</span></>,
+    features: [
+      'Card special și printre primele joburi',
+      'Postare în 48h pe paginile de social media',
+      'Facebook, TikTok, Instagram'
+    ],
+    priceId: 'price_1NxxxPromotion'
   }
 ];
 
@@ -70,7 +96,7 @@ export default function EmployerHome() {
     subscriptionActive: boolean;
     trialEnd?: string;
   }>({ trialActive: false, subscriptionActive: false });
-  const [selectedPlan, setSelectedPlan] = useState<'basic' | 'premium'>('basic');
+  const [selectedPlan, setSelectedPlan] = useState<'basic' | 'premium' | 'single' | 'promotion'>('basic');
   const [showProfileModal, setShowProfileModal] = useState(false);
   const hasNavigated = useRef(false);
 
@@ -78,10 +104,15 @@ export default function EmployerHome() {
     if (employer) {
       const now = new Date();
       const trialEnd = employer.trialEnd ? new Date(employer.trialEnd) : null;
+      const subscriptionEnd = employer.subscriptionEnd ? new Date(employer.subscriptionEnd) : null;
+      
       const trialActive = trialEnd ? now < trialEnd : false;
+      const subscriptionActive = !!(employer.subscriptionActive && 
+        (subscriptionEnd ? now < subscriptionEnd : true)); // Pentru abonamente lunare, nu are subscriptionEnd
+      
       setSubscriptionStatus({
         trialActive,
-        subscriptionActive: !!employer.subscriptionActive,
+        subscriptionActive,
         trialEnd: employer.trialEnd,
       });
       
@@ -102,10 +133,14 @@ export default function EmployerHome() {
   const handleSubscribe = async (priceIdOverride?: string) => {
     try {
       const plan = PLAN_OPTIONS.find(p => p.priceId === priceIdOverride) || PLAN_OPTIONS.find(p => p.key === selectedPlan);
-      if (!plan?.priceId) return;
+      if (!plan?.priceId) {
+        console.error('Plan not found:', { priceIdOverride, selectedPlan });
+        return;
+      }
       const { url } = await employerAPI.createStripeCheckoutSession(plan.priceId);
       window.location.href = url;
     } catch (err) {
+      console.error('Subscription error:', err);
       alert('Eroare la inițierea plății Stripe. Încearcă din nou.');
     }
   };
@@ -184,7 +219,7 @@ export default function EmployerHome() {
             {!subscriptionStatus.trialActive && (
               <div>
                 <div className="mb-4 text-center font-semibold text-lg">Alege sau schimbă planul de abonament</div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
                   {PLAN_OPTIONS.map(plan => (
                     <PlanCard
                       key={plan.key}
@@ -192,7 +227,7 @@ export default function EmployerHome() {
                       price={plan.price}
                       features={plan.features}
                       selected={selectedPlan === plan.key}
-                      onSelect={plan.disabled || activePlanKey === plan.key ? undefined : () => setSelectedPlan(plan.key as 'basic' | 'premium')}
+                      onSelect={plan.disabled || activePlanKey === plan.key ? undefined : () => setSelectedPlan(plan.key as 'basic' | 'premium' | 'single' | 'promotion')}
                       disabled={plan.disabled}
                       isActivePlan={activePlanKey === plan.key && !plan.disabled}
                     />

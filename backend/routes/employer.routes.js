@@ -63,10 +63,35 @@ router.post('/stripe/webhook', express.raw({ type: 'application/json' }), async 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const employerId = session.metadata.employerId;
+    
+    // Determin tipul de abonament din price ID
+    let subscriptionType = 'basic'; // default
+    if (session.line_items && session.line_items.data.length > 0) {
+      const priceId = session.line_items.data[0].price.id;
+      
+      // Map price IDs to subscription types
+      if (priceId.includes('Basic')) {
+        subscriptionType = 'basic';
+      } else if (priceId.includes('Premium')) {
+        subscriptionType = 'premium';
+      } else if (priceId.includes('Single')) {
+        subscriptionType = 'single';
+      } else if (priceId.includes('Promotion')) {
+        subscriptionType = 'promotion';
+      }
+    }
+    
     // Activez abonamentul în DB
     await Employer.findOneAndUpdate(
       { userId: employerId },
-      { subscriptionActive: true, subscriptionType: 'basic' }
+      { 
+        subscriptionActive: true, 
+        subscriptionType: subscriptionType,
+        // Pentru abonamentele one-time, setăm o dată de expirare
+        ...(subscriptionType === 'single' || subscriptionType === 'promotion' ? {
+          subscriptionEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 zile
+        } : {})
+      }
     );
   }
   res.json({ received: true });

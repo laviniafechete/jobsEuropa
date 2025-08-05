@@ -30,7 +30,8 @@ export interface Employer {
   hasProfileCompleted?: boolean;
   companyProfile?: any;
   subscriptionActive?: boolean;
-  subscriptionType?: 'none' | 'basic' | 'premium';
+  subscriptionType?: 'none' | 'basic' | 'premium' | 'single' | 'promotion';
+  subscriptionEnd?: string;
   trialStart?: string;
   trialEnd?: string;
 }

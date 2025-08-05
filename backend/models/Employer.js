@@ -71,12 +71,16 @@ const employerSchema = new mongoose.Schema(
     resetPasswordExpires: Date,
     subscriptionType: {
       type: String,
-      enum: ['none', 'basic', 'premium'],
+      enum: ['none', 'basic', 'premium', 'single', 'promotion'],
       default: 'none',
     },
     subscriptionActive: {
       type: Boolean,
       default: false,
+    },
+    subscriptionEnd: {
+      type: Date,
+      // Pentru abonamentele one-time (single, promotion)
     },
     trialStart: {
       type: Date,
@@ -84,7 +88,7 @@ const employerSchema = new mongoose.Schema(
     },
     trialEnd: {
       type: Date,
-      default: () => new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 zile trial
+      default: () => new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15 zile trial
     },
     jobsPostedThisMonth: {
       type: Number,

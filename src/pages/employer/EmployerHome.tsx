@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../stores/authStore";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { employerAPI } from '../../services/api';
 
 const PLAN_OPTIONS = [
@@ -71,6 +71,8 @@ export default function EmployerHome() {
     trialEnd?: string;
   }>({ trialActive: false, subscriptionActive: false });
   const [selectedPlan, setSelectedPlan] = useState<'basic' | 'premium'>('basic');
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const hasNavigated = useRef(false);
 
   useEffect(() => {
     if (employer) {
@@ -82,6 +84,11 @@ export default function EmployerHome() {
         subscriptionActive: !!employer.subscriptionActive,
         trialEnd: employer.trialEnd,
       });
+      
+      // Dacă profilul companiei nu e completat, arată pop-up-ul
+      if (employer && !employer.hasProfileCompleted) {
+        setShowProfileModal(true);
+      }
     }
   }, [employer]);
 
@@ -103,7 +110,60 @@ export default function EmployerHome() {
     }
   };
 
+  const handleCompleteProfile = () => {
+    setShowProfileModal(false);
+    navigate("/employer/company");
+  };
+
+  const handleSkipProfile = () => {
+    setShowProfileModal(false);
+    // Navigate to home page without completing profile
+  };
+
   const canUsePremium = subscriptionStatus.trialActive || subscriptionStatus.subscriptionActive;
+
+  // Pop-up pentru profilul companiei
+  if (showProfileModal) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center px-4">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+            <div className="mb-6">
+              <div className="flex justify-center">
+                <div className="rounded-full bg-green-100 p-3">
+                  <svg className="h-12 w-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">
+              Completează profilul companiei
+            </h1>
+            <p className="text-gray-700 mb-6">
+              Pentru a posta joburi și a primi aplicații relevante, completează informațiile despre compania ta.
+            </p>
+            
+            <div className="space-y-3">
+              <button
+                onClick={handleCompleteProfile}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition duration-200"
+              >
+                Completează profilul
+              </button>
+              <button
+                onClick={handleSkipProfile}
+                className="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 rounded-lg transition duration-200"
+              >
+                Mai târziu
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20">
@@ -152,19 +212,6 @@ export default function EmployerHome() {
             )}
           </div>
         )}
-        {employer && employer.hasProfileCompleted === false && (
-          <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 mb-6 rounded flex items-center justify-between">
-            <div>
-              <b>Profilul companiei nu este completat!</b> Completează profilul pentru a putea posta joburi și a primi aplicații relevante.
-            </div>
-            <button
-              onClick={() => navigate("/employer/company")}
-              className="ml-4 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-4 py-2 rounded"
-            >
-              Completează profilul
-            </button>
-          </div>
-        )}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
             Bun venit, {employer?.companyName}!
@@ -183,15 +230,13 @@ export default function EmployerHome() {
             </button>
             
             <button
-              onClick={() => employer?.hasProfileCompleted !== false && navigate("/employer/post-job")}
-              className={`p-4 bg-green-50 rounded-lg border border-green-200 transition ${employer?.hasProfileCompleted === false || !canUsePremium ? 'opacity-60 cursor-not-allowed' : 'hover:bg-green-100'}`}
-              disabled={employer?.hasProfileCompleted === false || !canUsePremium}
+              onClick={() => !canUsePremium ? null : navigate("/employer/post-job")}
+              className={`p-4 bg-green-50 rounded-lg border border-green-200 transition ${!canUsePremium ? 'opacity-60 cursor-not-allowed' : 'hover:bg-green-100'}`}
+              disabled={!canUsePremium}
               title={
-                employer?.hasProfileCompleted === false
-                  ? 'Completează profilul companiei pentru a posta joburi'
-                  : !canUsePremium
-                    ? 'Activează un abonament pentru a posta joburi'
-                    : ''
+                !canUsePremium
+                  ? 'Activează un abonament pentru a posta joburi'
+                  : ''
               }
             >
               <h3 className="font-semibold text-green-900">Postează job</h3>
@@ -199,15 +244,13 @@ export default function EmployerHome() {
             </button>
             
             <button
-              onClick={() => employer?.hasProfileCompleted !== false && navigate("/employer/employees")}
-              className={`p-4 bg-purple-50 rounded-lg border border-purple-200 transition ${employer?.hasProfileCompleted === false || !canUsePremium ? 'opacity-60 cursor-not-allowed' : 'hover:bg-purple-100'}`}
-              disabled={employer?.hasProfileCompleted === false || !canUsePremium}
+              onClick={() => !canUsePremium ? null : navigate("/employer/employees")}
+              className={`p-4 bg-purple-50 rounded-lg border border-purple-200 transition ${!canUsePremium ? 'opacity-60 cursor-not-allowed' : 'hover:bg-purple-100'}`}
+              disabled={!canUsePremium}
               title={
-                employer?.hasProfileCompleted === false
-                  ? 'Completează profilul companiei pentru a vedea candidații'
-                  : !canUsePremium
-                    ? 'Activează un abonament pentru a vedea candidații'
-                    : ''
+                !canUsePremium
+                  ? 'Activează un abonament pentru a vedea candidații'
+                  : ''
               }
             >
               <h3 className="font-semibold text-purple-900">Candidații</h3>

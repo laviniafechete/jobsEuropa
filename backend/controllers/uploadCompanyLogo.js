@@ -3,6 +3,14 @@ import { asyncHandler, sendSuccess, sendError } from "../utils/errorHandler.js";
 import fs from 'fs';
 import path from 'path';
 
+// Ensure directory exists
+const ensureDirectoryExists = (dirPath) => {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+    console.log(`Created directory: ${dirPath}`);
+  }
+};
+
 export const uploadCompanyLogo = asyncHandler(async (req, res) => {
   console.log('=== UPLOAD LOGO DEBUG ===');
   console.log('req.user:', req.user);
@@ -21,12 +29,17 @@ export const uploadCompanyLogo = asyncHandler(async (req, res) => {
 
   console.log('Found employer:', employer.userId);
 
+  // Ensure directory exists before operations
+  const uploadDir = path.join(process.cwd(), 'public', 'companyLogos');
+  ensureDirectoryExists(uploadDir);
+
   // Delete old logo if exists
   if (employer.companyProfile?.logoUrl) {
     const oldLogoPath = path.join(process.cwd(), 'public', employer.companyProfile.logoUrl);
     try {
       if (fs.existsSync(oldLogoPath)) {
         fs.unlinkSync(oldLogoPath);
+        console.log('Deleted old logo:', oldLogoPath);
       }
     } catch (error) {
       console.error('Error deleting old logo:', error);
@@ -62,12 +75,19 @@ export const deleteCompanyLogo = asyncHandler(async (req, res) => {
 
   console.log('Found employer:', employer.userId);
 
+  // Ensure directory exists
+  const uploadDir = path.join(process.cwd(), 'public', 'companyLogos');
+  ensureDirectoryExists(uploadDir);
+
   // Delete logo file if exists
   if (employer.companyProfile?.logoUrl) {
     const logoPath = path.join(process.cwd(), 'public', employer.companyProfile.logoUrl);
     try {
       if (fs.existsSync(logoPath)) {
         fs.unlinkSync(logoPath);
+        console.log('Deleted logo file:', logoPath);
+      } else {
+        console.log('Logo file not found:', logoPath);
       }
     } catch (error) {
       console.error('Error deleting logo:', error);

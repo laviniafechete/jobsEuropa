@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 // import cors from "cors"; // REMOVED - doing manual CORS
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 import config from "./config.js";
 import { errorHandler, notFound } from "./utils/errorHandler.js";
 import { rateLimit } from "./middlewares/authMiddleware.js";
@@ -192,6 +193,22 @@ const connectDB = async () => {
   }
 };
 
+// Ensure required directories exist
+const ensureDirectories = () => {
+  const directories = [
+    'public',
+    'public/companyLogos',
+    'public/favicons'
+  ];
+  
+  directories.forEach(dir => {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+      console.log(`📁 Created directory: ${dir}`);
+    }
+  });
+};
+
 // Graceful shutdown
 const gracefulShutdown = (signal) => {
   console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
@@ -209,6 +226,7 @@ const gracefulShutdown = (signal) => {
 const startServer = async () => {
   try {
     await connectDB();
+    ensureDirectories();
     
     const server = app.listen(config.port, () => {
       console.log(`🚀 Server running on port ${config.port}`);

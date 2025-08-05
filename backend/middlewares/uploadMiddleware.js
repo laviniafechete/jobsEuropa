@@ -1,11 +1,22 @@
 import multer from 'multer';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import fs from 'fs';
+
+// Ensure companyLogos directory exists
+const ensureDirectoryExists = (dirPath) => {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+    console.log(`Created directory: ${dirPath}`);
+  }
+};
 
 // Configure storage for company logos
 const companyLogoStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'public/companyLogos/');
+    const uploadDir = 'public/companyLogos/';
+    ensureDirectoryExists(uploadDir);
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     // Generate unique filename with original extension

@@ -14,9 +14,25 @@ import {
   MapPin,
   Globe,
   FileText,
-  Lock
+  Lock,
+  Upload,
+  Trash2
 } from "lucide-react";
 import PhoneInput from '../../components/PhoneInput';
+
+interface FormData {
+  name: string;
+  cui: string;
+  location: string;
+  domain: string;
+  description: string;
+  logoUrl: string;
+  contactPerson: string;
+  position: string;
+  email: string;
+  phone: { prefix: string; number: string };
+  website: string;
+}
 
 const DOMAINS = [
   { value: "", label: "Selectează domeniul de activitate" },
@@ -58,18 +74,22 @@ export default function EmployerProfile() {
   const [isLoadingCompany, setIsLoadingCompany] = useState(false);
   const hasLoadedCompany = useRef(false);
   
-  const [formData, setFormData] = useState({
-    name: "",
-    cui: "",
-    location: "",
-    domain: "",
-    description: "",
-    contactPerson: "",
-    position: "",
-    email: "",
+  const [formData, setFormData] = useState<FormData>({
+    name: '',
+    cui: '',
+    location: '',
+    domain: '',
+    description: '',
+    logoUrl: '',
+    contactPerson: '',
+    position: '',
+    email: '',
     phone: { prefix: '+40', number: '' },
-    website: ""
+    website: ''
   });
+
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
   useEffect(() => {
     // Load company data if employer has completed profile and we haven't loaded it yet
@@ -127,6 +147,7 @@ export default function EmployerProfile() {
             location: company.location || "",
             domain: company.domain || "",
             description: company.description || "",
+            logoUrl: company.logoUrl || "",
             contactPerson: company.contactPerson || "",
             position: company.position || "",
             email: company.email || "",
@@ -216,8 +237,6 @@ export default function EmployerProfile() {
   };
 
   const handleCancel = () => {
-    setIsEditing(false);
-    // Reset form data to original values
     if (companyData) {
       // Parse phone number
       let phoneData = { prefix: '+40', number: '' };
@@ -242,17 +261,115 @@ export default function EmployerProfile() {
       }
       
       setFormData({
-        name: companyData.name || "",
-        cui: companyData.cui || "",
-        location: companyData.location || "",
-        domain: companyData.domain || "",
-        description: companyData.description || "",
-        contactPerson: companyData.contactPerson || "",
-        position: companyData.position || "",
-        email: companyData.email || "",
+        name: companyData.name || '',
+        cui: companyData.cui || '',
+        location: companyData.location || '',
+        domain: companyData.domain || '',
+        description: companyData.description || '',
+        logoUrl: companyData.logoUrl || '',
+        contactPerson: companyData.contactPerson || '',
+        position: companyData.position || '',
+        email: companyData.email || '',
         phone: phoneData,
-        website: companyData.website || ""
+        website: companyData.website || ''
       });
+    }
+    setLogoPreview(null);
+    setIsEditing(false);
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Doar fișiere imagine sunt permise!');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Fișierul este prea mare. Dimensiunea maximă este 5MB.');
+      return;
+    }
+
+    setIsUploadingLogo(true);
+
+    // Show preview immediately
+    const url = URL.createObjectURL(file);
+    setLogoPreview(url);
+
+    // Upload to backend
+    try {
+      const formData = new FormData();
+      formData.append('logo', file);
+
+      const response = await fetch(`${API_BASE_URL}/employer/upload-logo`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(errorData.error?.message || 'Eroare la încărcarea logo-ului');
+        // Remove preview on error
+        setLogoPreview(null);
+        return;
+      }
+
+      const data = await response.json();
+      alert('Logo-ul a fost încărcat cu succes!');
+      
+      // Update form with the actual URL from backend
+      setFormData(prev => ({
+        ...prev,
+        logoUrl: data.data.logoUrl
+      }));
+
+      // Reload company data to get updated logo
+      await loadCompanyData();
+    } catch (error) {
+      alert('Eroare la încărcarea logo-ului');
+      // Remove preview on error
+      setLogoPreview(null);
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    if (!confirm('Ești sigur că vrei să ștergi logo-ul companiei?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/employer/delete-logo`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (response.ok) {
+        alert('Logo-ul a fost șters cu succes!');
+        setLogoPreview(null);
+        setFormData(prev => ({
+          ...prev,
+          logoUrl: ''
+        }));
+        
+        // Reload company data to get updated logo
+        await loadCompanyData();
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error?.message || 'Eroare la ștergerea logo-ului');
+      }
+    } catch (error) {
+      alert('Eroare la ștergerea logo-ului');
     }
   };
 
@@ -382,22 +499,58 @@ export default function EmployerProfile() {
               
               {isEditing ? (
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Denumirea firmei
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                      placeholder="Denumirea firmei"
-                      required
-                    />
+                  {/* Logo Upload */}
+                  <div className="flex items-center gap-4">
+                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center overflow-hidden">
+                      {(logoPreview || companyData?.logoUrl) ? (
+                        <img
+                          src={logoPreview || `${API_BASE_URL.replace('/api', '')}${companyData?.logoUrl}`}
+                          alt="Logo companie"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Building2 className="w-8 h-8 text-green-600" />
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="flex items-center gap-2 cursor-pointer text-sm text-green-600 hover:text-green-800">
+                        <Upload className="w-4 h-4" />
+                        {isUploadingLogo ? 'Se încarcă...' : 'Încarcă logo'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleLogoUpload}
+                          disabled={isUploadingLogo}
+                        />
+                      </label>
+                      {(logoPreview || companyData?.logoUrl) && (
+                        <button
+                          type="button"
+                          onClick={handleRemoveLogo}
+                          className="flex items-center gap-2 text-sm text-red-600 hover:text-red-800"
+                          disabled={isUploadingLogo}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Șterge logo
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nume companie *
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                        required
+                      />
+                    </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         CUI / BCE

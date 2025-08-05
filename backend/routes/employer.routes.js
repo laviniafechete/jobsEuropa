@@ -31,9 +31,12 @@ router.post('/stripe/create-checkout-session', authMiddleware, asyncHandler(asyn
   const employer = req.user;
   if (!employer) return sendError(res, 'Employer not found', 404);
 
-  const session = await stripe.checkout.sessions.create({
+  // Determin dacă este abonament sau plată one-time
+  const isSubscription = priceId.includes('Basic') || priceId.includes('Premium');
+  const isOneTime = priceId.includes('Single') || priceId.includes('Promotion');
+
+  const sessionConfig = {
     payment_method_types: ['card'],
-    mode: 'subscription',
     line_items: [
       {
         price: priceId,
@@ -45,8 +48,18 @@ router.post('/stripe/create-checkout-session', authMiddleware, asyncHandler(asyn
     cancel_url: `${config.frontendUrl}/employer/subscription-cancel`,
     metadata: {
       employerId: employer.userId,
+      priceId: priceId,
     },
-  });
+  };
+
+  // Adaug mode-ul în funcție de tipul de plată
+  if (isSubscription) {
+    sessionConfig.mode = 'subscription';
+  } else if (isOneTime) {
+    sessionConfig.mode = 'payment';
+  }
+
+  const session = await stripe.checkout.sessions.create(sessionConfig);
   res.json({ url: session.url });
 }));
 
@@ -63,37 +76,37 @@ router.post('/stripe/webhook', express.raw({ type: 'application/json' }), async 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const employerId = session.metadata.employerId;
+    const priceId = session.metadata.priceId;
     
     // Determin tipul de abonament din price ID
     let subscriptionType = 'basic'; // default
-    if (session.line_items && session.line_items.data.length > 0) {
-      const priceId = session.line_items.data[0].price.id;
-      
-      // Map price IDs to subscription types
-      if (priceId.includes('Basic')) {
-        subscriptionType = 'basic';
-      } else if (priceId.includes('Premium')) {
-        subscriptionType = 'premium';
-      } else if (priceId.includes('Single')) {
-        subscriptionType = 'single';
-      } else if (priceId.includes('Promotion')) {
-        subscriptionType = 'promotion';
-      }
+    if (priceId.includes('Basic')) {
+      subscriptionType = 'basic';
+    } else if (priceId.includes('Premium')) {
+      subscriptionType = 'premium';
+    } else if (priceId.includes('Single')) {
+      subscriptionType = 'single';
+    } else if (priceId.includes('Promotion')) {
+      subscriptionType = 'promotion';
     }
     
     // Activez abonamentul în DB
+    const updateData = { 
+      subscriptionActive: true, 
+      subscriptionType: subscriptionType
+    };
+    
+    // Pentru abonamentele one-time, setăm o dată de expirare
+    if (subscriptionType === 'single' || subscriptionType === 'promotion') {
+      updateData.subscriptionEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 zile
+    }
+    
     await Employer.findOneAndUpdate(
       { userId: employerId },
-      { 
-        subscriptionActive: true, 
-        subscriptionType: subscriptionType,
-        // Pentru abonamentele one-time, setăm o dată de expirare
-        ...(subscriptionType === 'single' || subscriptionType === 'promotion' ? {
-          subscriptionEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 zile
-        } : {})
-      }
+      updateData
     );
   }
+  
   res.json({ received: true });
 });
 

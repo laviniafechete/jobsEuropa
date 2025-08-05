@@ -68,20 +68,29 @@ const PLAN_OPTIONS = [
 
 function PlanCard({ title, price, features, selected, onSelect, disabled, isActivePlan }: any) {
   return (
-    <div className={`border rounded-lg p-6 shadow-sm ${isActivePlan ? 'border-green-600 ring-2 ring-green-300' : selected ? 'border-purple-600 ring-2 ring-purple-300' : 'border-gray-200'} ${disabled ? 'opacity-60' : 'hover:shadow-lg transition'} bg-white flex flex-col`}>
+    <div className={`border rounded-lg p-6 shadow-sm ${isActivePlan ? 'border-green-600 ring-2 ring-green-300 bg-green-50' : selected ? 'border-purple-600 ring-2 ring-purple-300' : 'border-gray-200'} ${disabled ? 'opacity-60' : 'hover:shadow-lg transition'} bg-white flex flex-col h-full`}>
       <h3 className="text-xl font-bold mb-2">{title}</h3>
       <div className="text-2xl font-semibold mb-4">{price}</div>
-      <ul className="mb-6 flex-1">
-        {features.map((f: string) => <li key={f} className="text-gray-700 mb-1">• {f}</li>)}
+      <ul className="mb-6 flex-1 space-y-2">
+        {features.map((f: string) => (
+          <li key={f} className="text-gray-700 text-sm flex items-start">
+            <span className="text-green-500 mr-2">✓</span>
+            {f}
+          </li>
+        ))}
       </ul>
       {isActivePlan && !disabled && (
-        <div className="mt-2 text-xs text-green-700 font-semibold text-center">Planul tău actual</div>
+        <div className="mt-2 text-xs text-green-700 font-semibold text-center bg-green-100 py-1 px-2 rounded">
+          Planul tău actual
+        </div>
       )}
       {!isActivePlan && onSelect && !disabled && (
         <button
           className={`w-full py-2 rounded font-semibold ${selected ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-800 hover:bg-purple-200'}`}
           onClick={onSelect}
-        >Alege</button>
+        >
+          Alege
+        </button>
       )}
       {disabled && <div className="text-xs text-gray-400 text-center">Activ automat la înregistrare</div>}
     </div>
@@ -202,58 +211,64 @@ export default function EmployerHome() {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Status trial/abonament */}
         {employer && (
           <div className="mb-6">
             {subscriptionStatus.subscriptionActive ? (
               <div className="bg-green-100 border-l-4 border-green-500 text-green-800 p-4 rounded mb-4">
-                Abonament activ: <b>{PLAN_OPTIONS.find(p => p.key === employer?.subscriptionType)?.title || 'Basic'}</b>. Poți schimba planul oricând mai jos.
+                Abonament activ: <b>{PLAN_OPTIONS.find(p => p.key === employer?.subscriptionType)?.title || 'Basic'}</b>. Poți schimbă planul oricând mai jos.
               </div>
             ) : subscriptionStatus.trialActive ? (
               <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-800 p-4 rounded mb-4">
                 Trial activ până la: <b>{subscriptionStatus.trialEnd ? new Date(subscriptionStatus.trialEnd).toLocaleString() : ''}</b>
               </div>
-            ) : null}
-            {/* Carduri planuri vizibile mereu dacă nu e trial */}
-            {!subscriptionStatus.trialActive && (
-              <div>
-                <div className="mb-4 text-center font-semibold text-lg">Alege sau schimbă planul de abonament</div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
-                  {PLAN_OPTIONS.map(plan => (
-                    <PlanCard
-                      key={plan.key}
-                      title={plan.title}
-                      price={plan.price}
-                      features={plan.features}
-                      selected={selectedPlan === plan.key}
-                      onSelect={plan.disabled || activePlanKey === plan.key ? undefined : () => setSelectedPlan(plan.key as 'basic' | 'premium' | 'single' | 'promotion')}
-                      disabled={plan.disabled}
-                      isActivePlan={activePlanKey === plan.key && !plan.disabled}
-                    />
-                  ))}
-                </div>
-                {activePlanKey !== 'trial' && (
-                  <div className="flex justify-center">
-                    <button
-                      onClick={() => handleSubscribe(PLAN_OPTIONS.find(p => p.key === selectedPlan)?.priceId)}
-                      className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-2 rounded shadow"
-                    >
-                      Abonează-te la {PLAN_OPTIONS.find(p => p.key === selectedPlan)?.title}
-                    </button>
-                  </div>
-                )}
+            ) : (
+              <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-800 p-4 rounded mb-4">
+                <b>Trial-ul tău a expirat!</b> Alege un plan de abonament pentru a continua să folosești platforma.
               </div>
             )}
           </div>
         )}
+
+        {/* Oferte de abonament - mereu vizibile */}
+        <div className="mb-8">
+          <div className="text-center mb-6">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Planuri de abonament</h2>
+            <p className="text-gray-600">Alege planul care se potrivește cel mai bine nevoilor tale</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
+            {PLAN_OPTIONS.map(plan => (
+              <PlanCard
+                key={plan.key}
+                title={plan.title}
+                price={plan.price}
+                features={plan.features}
+                selected={selectedPlan === plan.key}
+                onSelect={plan.disabled || activePlanKey === plan.key ? undefined : () => setSelectedPlan(plan.key as 'basic' | 'premium' | 'single' | 'promotion')}
+                disabled={plan.disabled}
+                isActivePlan={activePlanKey === plan.key && !plan.disabled}
+              />
+            ))}
+          </div>
+          {activePlanKey !== 'trial' && (
+            <div className="flex justify-center">
+              <button
+                onClick={() => handleSubscribe(PLAN_OPTIONS.find(p => p.key === selectedPlan)?.priceId)}
+                className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-8 py-3 rounded-lg shadow-lg text-lg"
+              >
+                Abonează-te la {PLAN_OPTIONS.find(p => p.key === selectedPlan)?.title}
+              </button>
+            </div>
+          )}
+        </div>
         {employer && employer.hasProfileCompleted === false && (
           <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 mb-6 rounded flex items-center justify-between">
             <div>
               <b>Profilul companiei nu este completat!</b> Completează profilul pentru a putea posta joburi și a primi aplicații relevante.
             </div>
             <button
-              onClick={() => navigate("/employer/company")}
+              onClick={() => navigate("/employer/profile")}
               className="ml-4 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-4 py-2 rounded"
             >
               Completează profilul
@@ -270,7 +285,7 @@ export default function EmployerHome() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <button
-              onClick={() => navigate("/employer/company")}
+              onClick={() => navigate("/employer/profile")}
               className="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition"
             >
               <h3 className="font-semibold text-blue-900">Profil companie</h3>

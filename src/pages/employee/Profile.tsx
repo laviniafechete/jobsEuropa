@@ -151,27 +151,62 @@ export default function Profile() {
       if (response.ok) {
         const data = await response.json();
         setCvData(data.data.cv);
+        
         // Pre-populate form with existing data
         if (data.data.cv) {
+          const cv = data.data.cv;
+          
+          // Parse phone number
+          let phoneData = { prefix: '+40', number: '' };
+          if (cv.personalInfo?.phone) {
+            const phone = cv.personalInfo.phone;
+            if (phone.startsWith('+40')) {
+              phoneData = {
+                prefix: '+40',
+                number: phone.substring(3)
+              };
+            } else if (phone.startsWith('40')) {
+              phoneData = {
+                prefix: '+40',
+                number: phone.substring(2)
+              };
+            } else {
+              phoneData = {
+                prefix: '+40',
+                number: phone
+              };
+            }
+          }
+          
+          // Parse languages
+          const languages = cv.skills?.languages?.map((lang: any, index: number) => ({
+            id: index.toString(),
+            language: lang.language,
+            level: lang.level,
+            customLanguage: lang.language
+          })) || [];
+          
+          // Parse interest domains
+          const interestDomains = cv.preferences?.interestDomains || [];
+          
           setFormData({
-            experience: data.data.cv.professional?.experience?.[0]?.description || "",
-            skills: data.data.cv.skills?.technical?.join(", ") || "",
-            education: data.data.cv.professional?.education?.[0]?.field || "",
-            languages: data.data.cv.skills?.languages?.map((l: any) => l.language).join(", ") || "",
-            availability: data.data.cv.preferences?.availability || "",
-            location: data.data.cv.personalInfo?.location || "",
-            phone: data.data.cv.personalInfo?.phone ? {
-              prefix: data.data.cv.personalInfo.phone.substring(0, 3),
-              number: data.data.cv.personalInfo.phone.substring(3)
-            } : { prefix: '+40', number: '' },
-            birthDate: data.data.cv.personalInfo?.dateOfBirth ? new Date(data.data.cv.personalInfo.dateOfBirth).toISOString().split('T')[0] : "",
-            gender: "",
-            drivingLicense: false,
-            hasPassport: false,
-            willingToRelocate: false,
-            salaryExpectation: data.data.cv.preferences?.desiredSalary?.min?.toString() || "",
-            additionalInfo: data.data.cv.professional?.summary || ""
+            experience: cv.professional?.experience || "",
+            skills: cv.skills?.technical?.join(", ") || "",
+            education: cv.professional?.education || "",
+            languages: "",
+            availability: cv.preferences?.availability || "",
+            location: cv.personalInfo?.location || "",
+            phone: phoneData,
+            birthDate: cv.personalInfo?.dateOfBirth ? new Date(cv.personalInfo.dateOfBirth).toISOString().split('T')[0] : "",
+            gender: cv.personalInfo?.gender || "",
+            drivingLicense: cv.documents?.drivingLicense || false,
+            hasPassport: cv.documents?.hasPassport || false,
+            willingToRelocate: cv.documents?.willingToRelocate || false,
+            salaryExpectation: cv.preferences?.salaryExpectation || "",
+            additionalInfo: cv.additionalInfo || ""
           });
+          
+          setUserLanguages(languages);
         }
       } else {
         console.error("Failed to load CV data:", response.status);
@@ -203,9 +238,17 @@ export default function Profile() {
     setIsLoading(true);
 
     try {
+      // Prepare languages data
+      const languages = userLanguages.map(lang => ({
+        language: lang.language === "custom" ? lang.customLanguage : getLanguageLabel(lang.language),
+        level: lang.level
+      }));
+
       const payload = {
         ...formData,
         phone: formData.phone.prefix + formData.phone.number,
+        languages: languages,
+        interestDomains: [], // Will be populated from skills if needed
         userId: user?.userId,
       };
 
@@ -254,25 +297,54 @@ export default function Profile() {
     setIsEditing(false);
     // Reset form data to original values
     if (cvData) {
+      // Parse phone number
+      let phoneData = { prefix: '+40', number: '' };
+      if (cvData.personalInfo?.phone) {
+        const phone = cvData.personalInfo.phone;
+        if (phone.startsWith('+40')) {
+          phoneData = {
+            prefix: '+40',
+            number: phone.substring(3)
+          };
+        } else if (phone.startsWith('40')) {
+          phoneData = {
+            prefix: '+40',
+            number: phone.substring(2)
+          };
+        } else {
+          phoneData = {
+            prefix: '+40',
+            number: phone
+          };
+        }
+      }
+      
+      // Parse languages
+      const languages = cvData.skills?.languages?.map((lang: any, index: number) => ({
+        id: index.toString(),
+        language: lang.language,
+        level: lang.level,
+        customLanguage: lang.language
+      })) || [];
+      
       setFormData({
-        experience: cvData.professional?.experience?.[0]?.description || "",
+        experience: cvData.professional?.experience || "",
         skills: cvData.skills?.technical?.join(", ") || "",
-        education: cvData.professional?.education?.[0]?.field || "",
-        languages: cvData.skills?.languages?.map((l: any) => l.language).join(", ") || "",
+        education: cvData.professional?.education || "",
+        languages: "",
         availability: cvData.preferences?.availability || "",
         location: cvData.personalInfo?.location || "",
-        phone: cvData.personalInfo?.phone ? {
-          prefix: cvData.personalInfo.phone.substring(0, 3),
-          number: cvData.personalInfo.phone.substring(3)
-        } : { prefix: '+40', number: '' },
+        phone: phoneData,
         birthDate: cvData.personalInfo?.dateOfBirth ? new Date(cvData.personalInfo.dateOfBirth).toISOString().split('T')[0] : "",
-        gender: "",
-        drivingLicense: false,
-        hasPassport: false,
-        willingToRelocate: false,
-        salaryExpectation: cvData.preferences?.desiredSalary?.min?.toString() || "",
-        additionalInfo: cvData.professional?.summary || ""
+        gender: cvData.personalInfo?.gender || "",
+        drivingLicense: cvData.documents?.drivingLicense || false,
+        hasPassport: cvData.documents?.hasPassport || false,
+        willingToRelocate: cvData.documents?.willingToRelocate || false,
+        salaryExpectation: cvData.preferences?.salaryExpectation || "",
+        additionalInfo: cvData.additionalInfo || ""
       });
+      
+      setUserLanguages(languages);
     }
   };
 
@@ -376,6 +448,22 @@ export default function Profile() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Gen
+                    </label>
+                    <select
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Selectează</option>
+                      <option value="male">Masculin</option>
+                      <option value="female">Feminin</option>
+                      <option value="other">Altul</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Locație
                     </label>
                     <input
@@ -407,6 +495,15 @@ export default function Profile() {
                       <Calendar className="w-4 h-4 text-gray-400" />
                       <span className="text-gray-700">
                         {new Date(cvData.personalInfo.dateOfBirth).toLocaleDateString('ro-RO')}
+                      </span>
+                    </div>
+                  )}
+                  {cvData?.personalInfo?.gender && (
+                    <div className="flex items-center gap-3">
+                      <User className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-700">
+                        {cvData.personalInfo.gender === 'male' ? 'Masculin' : 
+                         cvData.personalInfo.gender === 'female' ? 'Feminin' : 'Altul'}
                       </span>
                     </div>
                   )}
@@ -543,10 +640,10 @@ export default function Profile() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {cvData?.professional?.experience?.[0]?.description && (
+                  {cvData?.professional?.experience && (
                     <div>
                       <h3 className="font-medium text-gray-900 mb-2">Experiență</h3>
-                      <p className="text-gray-700">{cvData.professional.experience[0].description}</p>
+                      <p className="text-gray-700">{cvData.professional.experience}</p>
                     </div>
                   )}
                   {cvData?.skills?.technical?.length > 0 && (
@@ -561,10 +658,10 @@ export default function Profile() {
                       </div>
                     </div>
                   )}
-                  {cvData?.professional?.education?.[0]?.field && (
+                  {cvData?.professional?.education && (
                     <div>
                       <h3 className="font-medium text-gray-900 mb-2">Educație</h3>
-                      <p className="text-gray-700">{getEducationLabel(cvData.professional.education[0].field)}</p>
+                      <p className="text-gray-700">{getEducationLabel(cvData.professional.education)}</p>
                     </div>
                   )}
                   {cvData?.skills?.languages?.length > 0 && (
@@ -669,11 +766,36 @@ export default function Profile() {
                     <div>
                       <h3 className="font-medium text-gray-900 mb-2">Așteptări salariale</h3>
                       <p className="text-gray-700">
-                        {cvData?.preferences?.desiredSalary?.min 
-                          ? `${getSalaryLabel(cvData.preferences.desiredSalary.min)}`
+                        {cvData?.preferences?.salaryExpectation 
+                          ? getSalaryLabel(cvData.preferences.salaryExpectation)
                           : "Nu specificat"
                         }
                       </p>
+                    </div>
+                  </div>
+                  
+                  {/* Documents */}
+                  <div>
+                    <h3 className="font-medium text-gray-900 mb-2">Documente</h3>
+                    <div className="space-y-2">
+                      {cvData?.documents?.drivingLicense && (
+                        <div className="flex items-center gap-2">
+                          <Car className="w-4 h-4 text-green-600" />
+                          <span className="text-gray-700">Permis de conducere</span>
+                        </div>
+                      )}
+                      {cvData?.documents?.hasPassport && (
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-green-600" />
+                          <span className="text-gray-700">Carte de identitate / Pașaport valid</span>
+                        </div>
+                      )}
+                      {cvData?.documents?.willingToRelocate && (
+                        <div className="flex items-center gap-2">
+                          <Globe className="w-4 h-4 text-green-600" />
+                          <span className="text-gray-700">Dispus să se mute</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -681,7 +803,7 @@ export default function Profile() {
             </div>
 
             {/* Additional Info */}
-            {cvData?.professional?.summary && (
+            {cvData?.additionalInfo && (
               <div className="bg-white rounded-lg shadow p-6 mt-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Informații suplimentare</h2>
                 
@@ -695,7 +817,7 @@ export default function Profile() {
                     placeholder="Orice alte informații relevante..."
                   />
                 ) : (
-                  <p className="text-gray-700">{cvData.professional.summary}</p>
+                  <p className="text-gray-700">{cvData.additionalInfo}</p>
                 )}
               </div>
             )}

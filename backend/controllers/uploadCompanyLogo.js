@@ -4,6 +4,11 @@ import fs from 'fs';
 import path from 'path';
 
 export const uploadCompanyLogo = asyncHandler(async (req, res) => {
+  console.log('=== UPLOAD LOGO DEBUG ===');
+  console.log('req.user:', req.user);
+  console.log('req.userType:', req.userType);
+  console.log('req.file:', req.file);
+  
   if (!req.file) {
     return sendError(res, "Nu a fost selectat niciun fișier", 400);
   }
@@ -13,6 +18,8 @@ export const uploadCompanyLogo = asyncHandler(async (req, res) => {
   if (!employer) {
     return sendError(res, "Employer nu a fost găsit", 404);
   }
+
+  console.log('Found employer:', employer.userId);
 
   // Delete old logo if exists
   if (employer.companyProfile?.logoUrl) {
@@ -43,11 +50,17 @@ export const uploadCompanyLogo = asyncHandler(async (req, res) => {
 });
 
 export const deleteCompanyLogo = asyncHandler(async (req, res) => {
+  console.log('=== DELETE LOGO DEBUG ===');
+  console.log('req.user:', req.user);
+  console.log('req.userType:', req.userType);
+  
   // Find employer
   const employer = await Employer.findById(req.user._id);
   if (!employer) {
     return sendError(res, "Employer nu a fost găsit", 404);
   }
+
+  console.log('Found employer:', employer.userId);
 
   // Delete logo file if exists
   if (employer.companyProfile?.logoUrl) {

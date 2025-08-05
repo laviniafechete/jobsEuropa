@@ -308,21 +308,26 @@ export default function EmployerProfile() {
       const response = await fetch(`${API_BASE_URL}/employer/upload-logo`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
+          Authorization: `Bearer ${token}`
         },
         body: formData
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        alert(errorData.error?.message || 'Eroare la încărcarea logo-ului');
+        if (errorData.error?.message?.includes("token")) {
+          showError("Sesiunea a expirat. Te rugăm să te loghezi din nou.");
+          navigate("/employer/login");
+          return;
+        }
+        showError(errorData.error?.message || 'Eroare la încărcarea logo-ului');
         // Remove preview on error
         setLogoPreview(null);
         return;
       }
 
       const data = await response.json();
-      alert('Logo-ul a fost încărcat cu succes!');
+      showSuccess('Logo-ul a fost încărcat cu succes!');
       
       // Update form with the actual URL from backend
       setFormData(prev => ({
@@ -333,7 +338,7 @@ export default function EmployerProfile() {
       // Reload company data to get updated logo
       await loadCompanyData();
     } catch (error) {
-      alert('Eroare la încărcarea logo-ului');
+      showError('Eroare la încărcarea logo-ului');
       // Remove preview on error
       setLogoPreview(null);
     } finally {
@@ -350,12 +355,12 @@ export default function EmployerProfile() {
       const response = await fetch(`${API_BASE_URL}/employer/delete-logo`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
+          Authorization: `Bearer ${token}`
         }
       });
 
       if (response.ok) {
-        alert('Logo-ul a fost șters cu succes!');
+        showSuccess('Logo-ul a fost șters cu succes!');
         setLogoPreview(null);
         setFormData(prev => ({
           ...prev,
@@ -366,10 +371,15 @@ export default function EmployerProfile() {
         await loadCompanyData();
       } else {
         const errorData = await response.json();
-        alert(errorData.error?.message || 'Eroare la ștergerea logo-ului');
+        if (errorData.error?.message?.includes("token")) {
+          showError("Sesiunea a expirat. Te rugăm să te loghezi din nou.");
+          navigate("/employer/login");
+          return;
+        }
+        showError(errorData.error?.message || 'Eroare la ștergerea logo-ului');
       }
     } catch (error) {
-      alert('Eroare la ștergerea logo-ului');
+      showError('Eroare la ștergerea logo-ului');
     }
   };
 

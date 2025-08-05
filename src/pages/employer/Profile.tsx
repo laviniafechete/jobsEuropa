@@ -312,8 +312,16 @@ export default function EmployerProfile() {
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                <Building2 className="w-8 h-8 text-green-600" />
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center overflow-hidden">
+                {companyData?.logoUrl ? (
+                  <img
+                    src={`${API_BASE_URL.replace('/api', '')}${companyData.logoUrl}`}
+                    alt="Logo companie"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <Building2 className="w-8 h-8 text-green-600" />
+                )}
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">{employer.companyName}</h1>

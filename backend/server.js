@@ -161,6 +161,9 @@ const frontendBuildPath = path.join(__dirname, '..', 'dist');
 // Serve static files in both development and production
 app.use(express.static(frontendBuildPath));
 
+// Serve static files from public folder (for company logos, etc.)
+app.use('/public', express.static(path.join(__dirname, '..', 'public')));
+
 // Catch all handler: send back React's index.html file for client-side routing
 app.get('*', (req, res) => {
   // Skip API routes - they should be handled by the API routes above

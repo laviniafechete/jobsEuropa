@@ -72,7 +72,6 @@ export default function EmployerHome() {
   }>({ trialActive: false, subscriptionActive: false });
   const [selectedPlan, setSelectedPlan] = useState<'basic' | 'premium'>('basic');
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [hasSkippedProfile, setHasSkippedProfile] = useState(false);
   const hasNavigated = useRef(false);
 
   useEffect(() => {
@@ -86,12 +85,12 @@ export default function EmployerHome() {
         trialEnd: employer.trialEnd,
       });
       
-      // Dacă profilul companiei nu e completat și nu a fost sărit, arată pop-up-ul
-      if (employer && !employer.hasProfileCompleted && !hasSkippedProfile) {
+      // Dacă profilul companiei nu e completat, arată pop-up-ul
+      if (employer && !employer.hasProfileCompleted) {
         setShowProfileModal(true);
       }
     }
-  }, [employer, hasSkippedProfile]);
+  }, [employer]);
 
   // Determin planul activ
   const activePlanKey = subscriptionStatus.subscriptionActive
@@ -118,7 +117,6 @@ export default function EmployerHome() {
 
   const handleSkipProfile = () => {
     setShowProfileModal(false);
-    setHasSkippedProfile(true);
     // Navigate to home page without completing profile
   };
 
@@ -214,7 +212,7 @@ export default function EmployerHome() {
             )}
           </div>
         )}
-        {employer && employer.hasProfileCompleted === false && hasSkippedProfile && (
+        {employer && employer.hasProfileCompleted === false && (
           <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 mb-6 rounded flex items-center justify-between">
             <div>
               <b>Profilul companiei nu este completat!</b> Completează profilul pentru a putea posta joburi și a primi aplicații relevante.
@@ -245,11 +243,11 @@ export default function EmployerHome() {
             </button>
             
             <button
-              onClick={() => (employer?.hasProfileCompleted === false && hasSkippedProfile) || !canUsePremium ? null : navigate("/employer/post-job")}
-              className={`p-4 bg-green-50 rounded-lg border border-green-200 transition ${(employer?.hasProfileCompleted === false && hasSkippedProfile) || !canUsePremium ? 'opacity-60 cursor-not-allowed' : 'hover:bg-green-100'}`}
-              disabled={(employer?.hasProfileCompleted === false && hasSkippedProfile) || !canUsePremium}
+              onClick={() => (employer?.hasProfileCompleted === false) || !canUsePremium ? null : navigate("/employer/post-job")}
+              className={`p-4 bg-green-50 rounded-lg border border-green-200 transition ${(employer?.hasProfileCompleted === false) || !canUsePremium ? 'opacity-60 cursor-not-allowed' : 'hover:bg-green-100'}`}
+              disabled={(employer?.hasProfileCompleted === false) || !canUsePremium}
               title={
-                employer?.hasProfileCompleted === false && hasSkippedProfile
+                employer?.hasProfileCompleted === false
                   ? 'Completează profilul companiei pentru a posta joburi'
                   : !canUsePremium
                     ? 'Activează un abonament pentru a posta joburi'
@@ -261,11 +259,11 @@ export default function EmployerHome() {
             </button>
             
             <button
-              onClick={() => (employer?.hasProfileCompleted === false && hasSkippedProfile) || !canUsePremium ? null : navigate("/employer/employees")}
-              className={`p-4 bg-purple-50 rounded-lg border border-purple-200 transition ${(employer?.hasProfileCompleted === false && hasSkippedProfile) || !canUsePremium ? 'opacity-60 cursor-not-allowed' : 'hover:bg-purple-100'}`}
-              disabled={(employer?.hasProfileCompleted === false && hasSkippedProfile) || !canUsePremium}
+              onClick={() => (employer?.hasProfileCompleted === false) || !canUsePremium ? null : navigate("/employer/employees")}
+              className={`p-4 bg-purple-50 rounded-lg border border-purple-200 transition ${(employer?.hasProfileCompleted === false) || !canUsePremium ? 'opacity-60 cursor-not-allowed' : 'hover:bg-purple-100'}`}
+              disabled={(employer?.hasProfileCompleted === false) || !canUsePremium}
               title={
-                employer?.hasProfileCompleted === false && hasSkippedProfile
+                employer?.hasProfileCompleted === false
                   ? 'Completează profilul companiei pentru a vedea candidații'
                   : !canUsePremium
                     ? 'Activează un abonament pentru a vedea candidații'

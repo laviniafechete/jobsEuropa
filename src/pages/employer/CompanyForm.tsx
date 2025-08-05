@@ -94,12 +94,84 @@ export default function CompanyForm({ onSuccess = () => {}, initialData, onSave 
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setLogoPreview(url);
-      setForm((f) => ({ ...f, logoUrl: url }));
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      showError('Doar fișiere imagine sunt permise!');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      showError('Fișierul este prea mare. Dimensiunea maximă este 5MB.');
+      return;
+    }
+
+    // Show preview immediately
+    const url = URL.createObjectURL(file);
+    setLogoPreview(url);
+
+    // Upload to backend
+    try {
+      const formData = new FormData();
+      formData.append('logo', file);
+
+      const response = await fetch(`${API_BASE_URL}/employer/upload-logo`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        showError(errorData.error?.message || 'Eroare la încărcarea logo-ului');
+        // Remove preview on error
+        setLogoPreview(null);
+        return;
+      }
+
+      const data = await response.json();
+      showSuccess('Logo-ul a fost încărcat cu succes!');
+      
+      // Update form with the actual URL from backend
+      setForm(prev => ({
+        ...prev,
+        logoUrl: data.data.logoUrl
+      }));
+    } catch (error) {
+      showError('Eroare la încărcarea logo-ului');
+      // Remove preview on error
+      setLogoPreview(null);
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/employer/delete-logo`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        showSuccess('Logo-ul a fost șters cu succes!');
+        setLogoPreview(null);
+        setForm(prev => ({
+          ...prev,
+          logoUrl: ''
+        }));
+      } else {
+        const errorData = await response.json();
+        showError(errorData.error?.message || 'Eroare la ștergerea logo-ului');
+      }
+    } catch (error) {
+      showError('Eroare la ștergerea logo-ului');
     }
   };
 
@@ -247,11 +319,20 @@ export default function CompanyForm({ onSuccess = () => {}, initialData, onSave 
           />
         </label>
         {logoPreview && (
-          <img
-            src={logoPreview}
-            alt="Preview"
-            className="w-24 h-24 rounded-full object-cover mx-auto border"
-          />
+          <div className="flex flex-col items-center gap-2">
+            <img
+              src={logoPreview}
+              alt="Preview"
+              className="w-24 h-24 rounded-full object-cover mx-auto border"
+            />
+            <button
+              type="button"
+              onClick={handleRemoveLogo}
+              className="text-red-600 hover:text-red-800 text-sm font-medium"
+            >
+              Șterge logo-ul
+            </button>
+          </div>
         )}
         <button
           type="submit"

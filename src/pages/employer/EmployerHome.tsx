@@ -116,16 +116,7 @@ function PlanCard({ title, price, features, selected, onSelect, disabled, isActi
         </button>
       )}
       
-      {isAddon && onAddonService && planKey && (
-        <button
-          className="w-full py-2 rounded font-semibold bg-orange-600 text-white hover:bg-orange-700 transition-colors"
-          onClick={() => onAddonService(planKey)}
-        >
-          Plătește {title}
-        </button>
-      )}
-      
-      {isAddon && !onAddonService && (
+      {isAddon && (
         <div className="text-xs text-gray-500 text-center py-1 px-2 rounded bg-gray-100">
           Serviciu adițional
         </div>
@@ -264,7 +255,7 @@ export default function EmployerHome() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-20">
+    <div className="min-h-screen bg-gray-50 pt-4">
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Status trial/abonament */}
         {employer && (
@@ -392,7 +383,7 @@ export default function EmployerHome() {
                     disabled={false}
                     isActivePlan={false}
                     isAddon={plan.isAddon}
-                    onAddonService={handleAddonService}
+                    onAddonService={undefined}
                     planKey={plan.key}
                   />
                 ))}

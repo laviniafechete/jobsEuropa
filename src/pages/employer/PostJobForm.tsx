@@ -6,6 +6,7 @@ import JobAdCard from "./JobAdCard";
 import { API_BASE_URL } from "../../config/env";
 import EditJobAdModal from "./EditJobAdModal";
 import { useSnackbar } from "../../hooks/useSnackbar";
+import { employerAPI } from "../../services/api";
 
 export default function PostJobForm() {
   const { employer, token } = useAuthStore();
@@ -81,6 +82,55 @@ export default function PostJobForm() {
   };
   const handleBenefitRemove = (b: string) => setBenefits(benefits.filter(x => x !== b));
 
+  const handlePromoteJob = async (jobId: string) => {
+    try {
+      // Verific dacă are abonament de promovare activ
+      const hasPromotionActive = employer && (
+        employer.subscriptionType === 'promotion' && 
+        employer.subscriptionEnd && 
+        new Date(employer.subscriptionEnd) > new Date()
+      );
+
+      if (!hasPromotionActive) {
+        // Redirecționez către plată pentru "Promovare"
+        try {
+          const { url } = await employerAPI.createStripeCheckoutSession('price_1NxxxPromotion');
+          window.location.href = url;
+          return;
+        } catch (err) {
+          console.error('Error redirecting to promotion payment:', err);
+          showError('Eroare la redirecționarea către plată pentru promovare. Încearcă din nou.');
+          return;
+        }
+      }
+
+      // Dacă are promovare activă, aplică promovarea
+      const response = await fetch(`${API_BASE_URL}/jobs/${jobId}/promote`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        showSuccess('Job promovat cu succes!');
+        // Refresh lista de joburi
+        const jobsResponse = await fetch(`${API_BASE_URL}/jobs/employer/my-jobs`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (jobsResponse.ok) {
+          const data = await jobsResponse.json();
+          setJobAds(data.data.jobs || []);
+        }
+      } else {
+        showError('Eroare la promovarea job-ului');
+      }
+    } catch (error) {
+      console.error('Error promoting job:', error);
+      showError('Eroare la promovarea job-ului');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -101,6 +151,7 @@ export default function PostJobForm() {
         "Proiect": "contract",
         "Sezonier": "contract"
       };
+      
       // Map frontend fields to backend fields
       const jobData = {
         title: form.title,
@@ -119,7 +170,28 @@ export default function PostJobForm() {
         benefits
       };
 
-              const response = await fetch(`${API_BASE_URL}/jobs`, {
+      // Verific dacă are abonament activ pentru a posta joburi
+      const hasActiveSubscription = employer && (
+        (employer.trialEnd && new Date(employer.trialEnd) > new Date()) || 
+        employer.subscriptionActive ||
+        (employer.subscriptionType === 'single' && employer.subscriptionEnd && new Date(employer.subscriptionEnd) > new Date())
+      );
+
+      if (!hasActiveSubscription) {
+        // Redirecționez către plată pentru "Anunț Unic"
+        try {
+          const { url } = await employerAPI.createStripeCheckoutSession('price_1NxxxSingle');
+          window.location.href = url;
+          return;
+        } catch (err) {
+          console.error('Error redirecting to payment:', err);
+          showError('Eroare la redirecționarea către plată. Încearcă din nou.');
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      const response = await fetch(`${API_BASE_URL}/jobs`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -163,10 +235,10 @@ export default function PostJobForm() {
     }
   };
 
-  // Determin dacă are acces la funcție
-  const canUsePremium = employer && ((employer.trialEnd && new Date(employer.trialEnd) > new Date()) || employer.subscriptionActive);
+  // Determin dacă are acces la funcție - permite postarea, verificarea se face la submit
+  const canPostJobs = true; // Orice angajator poate încerca să posteze, verificarea se face la submit
 
-  if (!canUsePremium) {
+  if (!canPostJobs) {
     return (
       <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-8 mt-10 px-2 sm:px-4">
         <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
@@ -351,7 +423,7 @@ export default function PostJobForm() {
             </div>
           )}
           {jobAds.slice().reverse().map((ad: any) => (
-            <JobAdCard key={ad.id} ad={ad} onEdit={() => setEditAd(ad.id)} />
+            <JobAdCard key={ad.id} ad={ad} onEdit={() => setEditAd(ad.id)} onPromote={() => handlePromoteJob(ad.id)} />
           ))}
         </div>
       </div>

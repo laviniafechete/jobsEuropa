@@ -49,12 +49,18 @@ export const uploadCompanyLogo = asyncHandler(async (req, res) => {
   // Update logo URL in company profile
   const logoUrl = `/companyLogos/${req.file.filename}`;
   
+  console.log('Saving logo URL:', logoUrl);
+  console.log('Current employer.companyProfile:', employer.companyProfile);
+  
   if (!employer.companyProfile) {
     employer.companyProfile = {};
   }
   
   employer.companyProfile.logoUrl = logoUrl;
+  console.log('Updated employer.companyProfile:', employer.companyProfile);
+  
   await employer.save();
+  console.log('Employer saved successfully');
 
   sendSuccess(res, {
     logoUrl: logoUrl,

@@ -335,6 +335,9 @@ export default function EmployerProfile() {
         logoUrl: data.data.logoUrl
       }));
 
+      // Reset company loading flag to allow reload
+      hasLoadedCompany.current = false;
+      
       // Reload company data to get updated logo
       await loadCompanyData();
     } catch (error) {
@@ -366,6 +369,9 @@ export default function EmployerProfile() {
           ...prev,
           logoUrl: ''
         }));
+        
+        // Reset company loading flag to allow reload
+        hasLoadedCompany.current = false;
         
         // Reload company data to get updated logo
         await loadCompanyData();

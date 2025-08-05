@@ -76,7 +76,16 @@ router.post('/stripe/webhook', express.raw({ type: 'application/json' }), async 
 router.get("/profile", authMiddleware, asyncHandler(async (req, res) => {
   const employer = await Employer.findById(req.user._id);
   if (!employer) return sendError(res, "Angajatorul nu a fost găsit", 404);
-  sendSuccess(res, employer.toPublicJSON(), "Profil companie găsit");
+  
+  console.log('=== PROFILE ROUTE DEBUG ===');
+  console.log('Employer found:', employer.userId);
+  console.log('Company profile:', employer.companyProfile);
+  console.log('Logo URL:', employer.companyProfile?.logoUrl);
+  
+  const publicData = employer.toPublicJSON();
+  console.log('Public data company profile:', publicData.companyProfile);
+  
+  sendSuccess(res, publicData, "Profil companie găsit");
 }));
 
 export default router;

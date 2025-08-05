@@ -17,20 +17,20 @@ export const saveCv = asyncHandler(async (req, res) => {
     hasPassport,
     willingToRelocate,
     salaryExpectation,
-    preferredJobs,
     additionalInfo,
-    interestDomains // New field
+    interestDomains,
+    userId
   } = req.body;
 
-  const userId = req.user.userId; // From auth middleware
+  const userIdFromToken = req.user.userId; // From auth middleware
 
   // Check if user exists
-  const user = await User.findOne({ userId });
+  const user = await User.findOne({ userId: userIdFromToken });
   if (!user) {
     return sendError(res, "Utilizatorul nu a fost găsit", 404);
   }
 
-  // Prepare CV data
+  // Prepare CV data with new structure
   const cvData = {
     user: user._id,
     personalInfo: {
@@ -39,44 +39,38 @@ export const saveCv = asyncHandler(async (req, res) => {
       phone: phone || "",
       location: location || "",
       dateOfBirth: birthDate ? new Date(birthDate) : undefined,
-      nationality: "Romanian" // Default
+      nationality: "Romanian", // Default
+      gender: gender || undefined
     },
     professional: {
       summary: additionalInfo || "",
-      experience: experience ? [{
-        company: "Experiență personală",
-        position: "Angajat",
-        startDate: new Date(),
-        current: true,
-        description: experience
-      }] : [],
-      education: education ? [{
-        institution: "Educație",
-        degree: "Diplomă",
-        field: education,
-        startDate: new Date(),
-        current: true
-      }] : []
+      experience: experience || "",
+      education: education || undefined
     },
     skills: {
       technical: Array.isArray(skills) ? skills : (skills ? skills.split(',').map(s => s.trim()) : []),
       soft: [],
-      languages: Array.isArray(languages) ? languages : (languages ? languages.split(',').map(lang => ({
-        language: lang.trim(),
-        level: 'intermediate'
-      })) : [])
+      languages: Array.isArray(languages) ? languages : []
     },
     preferences: {
       desiredSalary: {
-        min: salaryExpectation ? parseInt(salaryExpectation) : undefined,
+        min: undefined, // Will be calculated based on salaryExpectation if needed
+        max: undefined,
         currency: 'EUR'
       },
-      workType: ['full-time'], // Default to full-time, can be updated based on user preferences
+      salaryExpectation: salaryExpectation || undefined,
+      workType: ['full-time'], // Default to full-time
       availability: availability || 'immediate',
       preferredLocations: location ? [location] : [],
-      industries: preferredJobs ? preferredJobs.split(',').map(job => job.trim()) : [],
-      interestDomains: Array.isArray(interestDomains) ? interestDomains : (interestDomains ? interestDomains.split(',').map(domain => domain.trim()) : [])
-    }
+      industries: [],
+      interestDomains: Array.isArray(interestDomains) ? interestDomains : []
+    },
+    documents: {
+      drivingLicense: drivingLicense || false,
+      hasPassport: hasPassport || false,
+      willingToRelocate: willingToRelocate || false
+    },
+    additionalInfo: additionalInfo || ""
   };
 
   // Check if a CV already exists for this user

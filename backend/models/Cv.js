@@ -32,7 +32,12 @@ const cvSchema = new mongoose.Schema(
       },
       profilePicture: { type: String }, // path to image
       dateOfBirth: { type: Date },
-      nationality: { type: String, trim: true }
+      nationality: { type: String, trim: true },
+      gender: { 
+        type: String, 
+        enum: ['male', 'female', 'other'],
+        trim: true
+      }
     },
     professional: {
       title: { 
@@ -44,24 +49,20 @@ const cvSchema = new mongoose.Schema(
         type: String,
         maxlength: [500, 'Summary cannot exceed 500 characters']
       },
-      experience: [{ 
-        company: { type: String, required: true, trim: true },
-        position: { type: String, required: true, trim: true },
-        startDate: { type: Date, required: true },
-        endDate: { type: Date },
-        current: { type: Boolean, default: false },
-        description: { type: String, maxlength: 1000 },
-        achievements: [{ type: String, trim: true }]
-      }],
-      education: [{
-        institution: { type: String, required: true, trim: true },
-        degree: { type: String, required: true, trim: true },
-        field: { type: String, required: true, trim: true },
-        startDate: { type: Date, required: true },
-        endDate: { type: Date },
-        current: { type: Boolean, default: false },
-        gpa: { type: Number, min: 0, max: 10 }
-      }]
+      experience: { 
+        type: String,
+        trim: true,
+        maxlength: [2000, 'Experience description cannot exceed 2000 characters']
+      },
+      education: { 
+        type: String, 
+        enum: [
+          'fara-studii', 'scoala-primara', 'gimnaziu', 'liceu-profesional', 
+          'liceu-bacalaureat', 'scoala-postliceala', 'facultate-licenta', 
+          'studii-superioare'
+        ],
+        trim: true
+      }
     },
     skills: {
       technical: [{ type: String, trim: true }],
@@ -79,7 +80,12 @@ const cvSchema = new mongoose.Schema(
       desiredSalary: {
         min: { type: Number },
         max: { type: Number },
-        currency: { type: String, default: 'RON' }
+        currency: { type: String, default: 'EUR' }
+      },
+      salaryExpectation: { 
+        type: String, 
+        enum: ['sub-1000', '1000-2000', '2000-3000', 'peste-3000', 'negociabil'],
+        trim: true
       },
       workType: [{ 
         type: String, 
@@ -94,6 +100,16 @@ const cvSchema = new mongoose.Schema(
       preferredLocations: [{ type: String, trim: true }],
       industries: [{ type: String, trim: true }],
       interestDomains: [{ type: String, trim: true }]
+    },
+    documents: {
+      drivingLicense: { type: Boolean, default: false },
+      hasPassport: { type: Boolean, default: false },
+      willingToRelocate: { type: Boolean, default: false }
+    },
+    additionalInfo: { 
+      type: String, 
+      trim: true,
+      maxlength: [1000, 'Additional info cannot exceed 1000 characters']
     },
     certifications: [{
       name: { type: String, required: true, trim: true },
@@ -116,22 +132,17 @@ const cvSchema = new mongoose.Schema(
 cvSchema.index({ user: 1 });
 cvSchema.index({ 'personalInfo.location': 1 });
 cvSchema.index({ 'skills.technical': 1 });
+cvSchema.index({ 'preferences.interestDomains': 1 });
 cvSchema.index({ isPublic: 1 });
 cvSchema.index({ lastUpdated: -1 });
 
 // Virtual for years of experience
 cvSchema.virtual('yearsOfExperience').get(function() {
-  if (!this.professional?.experience?.length) return 0;
+  if (!this.professional?.experience) return 0;
   
-  const totalMonths = this.professional.experience.reduce((total, exp) => {
-    const start = new Date(exp.startDate);
-    const end = exp.current ? new Date() : new Date(exp.endDate);
-    const months = (end.getFullYear() - start.getFullYear()) * 12 + 
-                   (end.getMonth() - start.getMonth());
-    return total + Math.max(0, months);
-  }, 0);
-  
-  return Math.floor(totalMonths / 12);
+  // For now, return 0 since experience is stored as a string
+  // This can be enhanced later if we store structured experience data
+  return 0;
 });
 
 // Pre-save middleware to update lastUpdated

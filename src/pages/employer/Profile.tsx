@@ -14,7 +14,6 @@ import {
   MapPin,
   Globe,
   FileText,
-  Lock,
   Upload,
   Trash2
 } from "lucide-react";
@@ -60,12 +59,6 @@ export default function EmployerProfile() {
   const { token, employer, updateEmployer } = useAuthStore();
   const navigate = useNavigate();
   const { showSuccess, showError } = useSnackbar();
-  
-  // Password change states
-  const [oldPassword, setOldPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [changing, setChanging] = useState(false);
   
   // Profile editing states
   const [isEditing, setIsEditing] = useState(false);
@@ -353,10 +346,14 @@ export default function EmployerProfile() {
       showSuccess('Logo-ul a fost încărcat cu succes!');
       
       // Update form with the actual URL from backend
-      setFormData(prev => ({
-        ...prev,
-        logoUrl: data.data.logoUrl
-      }));
+      setFormData(prev => {
+        const updated = {
+          ...prev,
+          logoUrl: data.data.logoUrl
+        };
+        console.log('Updated formData with logo:', updated);
+        return updated;
+      });
 
       // Reset company loading flag to allow reload
       hasLoadedCompany.current = false;
@@ -414,44 +411,6 @@ export default function EmployerProfile() {
     }
   };
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!oldPassword || !newPassword || !confirmPassword) {
-      showError("Completează toate câmpurile pentru schimbarea parolei!");
-      return;
-    }
-    if (newPassword.length < 6) {
-      showError("Parola nouă trebuie să aibă minim 6 caractere!");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      showError("Parolele nu coincid!");
-      return;
-    }
-    setChanging(true);
-    try {
-      const res = await fetch(`${API_BASE_URL}/employer/change-password`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ oldPassword, newPassword })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        showSuccess("Parola a fost schimbată cu succes!");
-        setOldPassword(""); setNewPassword(""); setConfirmPassword("");
-      } else {
-        showError(data.error?.message || "Eroare la schimbarea parolei");
-      }
-    } catch (e: any) {
-      showError(e.message || "Eroare la schimbarea parolei");
-    } finally {
-      setChanging(false);
-    }
-  };
-
   if (!employer) {
     return (
       <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
@@ -476,6 +435,10 @@ export default function EmployerProfile() {
                     src={`${API_BASE_URL.replace('/api', '')}${companyData.logoUrl}`}
                     alt="Logo companie"
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      console.error('Header logo load error:', e);
+                      console.log('Header logo URL attempted:', `${API_BASE_URL.replace('/api', '')}${companyData.logoUrl}`);
+                    }}
                   />
                 ) : (
                   <Building2 className="w-8 h-8 text-green-600" />
@@ -548,6 +511,10 @@ export default function EmployerProfile() {
                           src={logoPreview || `${API_BASE_URL.replace('/api', '')}${companyData?.logoUrl}`}
                           alt="Logo companie"
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            console.error('Logo load error:', e);
+                            console.log('Logo URL attempted:', logoPreview || `${API_BASE_URL.replace('/api', '')}${companyData?.logoUrl}`);
+                          }}
                         />
                       ) : (
                         <Building2 className="w-8 h-8 text-green-600" />
@@ -800,57 +767,6 @@ export default function EmployerProfile() {
               )}
             </div>
           </div>
-        </div>
-
-        {/* Password Change Section */}
-        <div className="mt-6 bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Lock className="w-5 h-5 text-green-600" />
-            Schimbă parola
-          </h2>
-          <form className="bg-gray-50 border rounded p-4" onSubmit={handleChangePassword}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Parola veche</label>
-                <input 
-                  type="password" 
-                  className="border rounded px-3 py-2 w-full" 
-                  value={oldPassword} 
-                  onChange={e => setOldPassword(e.target.value)} 
-                  required 
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Parola nouă</label>
-                <input 
-                  type="password" 
-                  className="border rounded px-3 py-2 w-full" 
-                  value={newPassword} 
-                  onChange={e => setNewPassword(e.target.value)} 
-                  required 
-                  minLength={6} 
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Confirmă parola nouă</label>
-                <input 
-                  type="password" 
-                  className="border rounded px-3 py-2 w-full" 
-                  value={confirmPassword} 
-                  onChange={e => setConfirmPassword(e.target.value)} 
-                  required 
-                  minLength={6} 
-                />
-              </div>
-            </div>
-            <button 
-              type="submit" 
-              className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded mt-4" 
-              disabled={changing}
-            >
-              {changing ? "Se schimbă..." : "Schimbă parola"}
-            </button>
-          </form>
         </div>
 
         {/* Action Buttons */}

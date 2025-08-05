@@ -45,7 +45,6 @@ import EmployerHome from "./pages/employer/EmployerHome";
 import EmployerLogin from "./pages/employer/Login";
 import EmployerRegister from "./pages/employer/Register";
 import EmployerVerifyEmail from "./pages/employer/VerifyEmail";
-import EmployerCompanyForm from "./pages/employer/CompanyForm";
 import EmployerPostJobForm from "./pages/employer/PostJobForm";
 import EmployerEmployeeList from "./pages/employer/EmployeeList";
 import EmployerReviews from "./pages/employer/EmployerReviews";
@@ -223,16 +222,6 @@ function App() {
                     <EmployerProvider>
                       <ProtectedRoute userType="employer">
                         <EmployerHome />
-                      </ProtectedRoute>
-                    </EmployerProvider>
-                  }
-                />
-                <Route
-                  path="/employer/company"
-                  element={
-                    <EmployerProvider>
-                      <ProtectedRoute userType="employer">
-                        <EmployerCompanyForm />
                       </ProtectedRoute>
                     </EmployerProvider>
                   }

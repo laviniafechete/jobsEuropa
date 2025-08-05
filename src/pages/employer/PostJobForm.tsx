@@ -94,7 +94,7 @@ export default function PostJobForm() {
       if (!hasPromotionActive) {
         // Redirecționez către plată pentru "Promovare"
         try {
-          const { url } = await employerAPI.createStripeCheckoutSession('price_1NxxxPromotion');
+          const { url } = await employerAPI.createStripeCheckoutSession('price_1O8tq8vo26lc0v3ocmjctl8gact4gnfk1_promotion');
           window.location.href = url;
           return;
         } catch (err) {
@@ -180,7 +180,7 @@ export default function PostJobForm() {
       if (!hasActiveSubscription) {
         // Redirecționez către plată pentru "Anunț Unic"
         try {
-          const { url } = await employerAPI.createStripeCheckoutSession('price_1NxxxSingle');
+          const { url } = await employerAPI.createStripeCheckoutSession('price_1O8tq8vo26lc0v3ocmjctl8gact4gnfk1_single');
           window.location.href = url;
           return;
         } catch (err) {

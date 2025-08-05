@@ -27,7 +27,7 @@ const PLAN_OPTIONS = [
       'Acces la toți candidații',
       'Suport'
     ],
-    priceId: 'price_1NxxxBasic',
+    priceId: 'price_1O8tq8vo26lc0v3ocmjctl8gact4gnfk1_basic',
     isAddon: false
   },
   {
@@ -41,7 +41,7 @@ const PLAN_OPTIONS = [
       'Acces la toți candidații',
       'Suport prioritar'
     ],
-    priceId: 'price_1NxxxPremium',
+    priceId: 'price_1O8tq8vo26lc0v3ocmjctl8gact4gnfk1_premium',
     isAddon: false
   },
   {
@@ -53,7 +53,7 @@ const PLAN_OPTIONS = [
       'Contact direct cu aplicanții',
       'Statistici de bază - vizualizări per anunț'
     ],
-    priceId: 'price_1NxxxSingle',
+    priceId: 'price_1O8tq8vo26lc0v3ocmjctl8gact4gnfk1_single',
     isAddon: true
   },
   {
@@ -62,23 +62,23 @@ const PLAN_OPTIONS = [
     price: <><span className="line-through text-gray-400 mr-2">$20</span><span className="text-green-700 font-bold">$9.99</span><span className="text-sm text-gray-500">/anunț</span></>,
     features: [
       'Card special și printre primele joburi',
-      'Postare în 48h pe paginile de social media',
-      'Facebook, TikTok, Instagram'
+      'Postare în 48h pe paginile de social media: Facebook, TikTok, Instagram',
+
     ],
-    priceId: 'price_1NxxxPromotion',
+    priceId: 'price_1O8tq8vo26lc0v3ocmjctl8gact4gnfk1_promotion',
     isAddon: true
   }
 ];
 
 function PlanCard({ title, price, features, selected, onSelect, disabled, isActivePlan, isAddon, onAddonService, planKey }: any) {
   return (
-    <div className={`border rounded-lg p-6 shadow-sm transition-all duration-200 ${isActivePlan
-        ? 'border-green-600 ring-2 ring-green-300 bg-green-50 transform scale-105'
-        : selected
-          ? 'border-purple-600 ring-2 ring-purple-300 bg-purple-50 transform scale-102'
-          : 'border-gray-200 hover:border-gray-300'
-    } ${disabled ? 'opacity-60' : 'hover:shadow-lg'} bg-white flex flex-col h-full relative`}>
-      
+    <div onClick={onSelect} className={`border rounded-lg p-6 shadow-sm transition-all duration-200 ${isActivePlan
+      ? 'border-green-600 ring-2 ring-green-300 bg-green-50 transform scale-105'
+      : selected
+        ? 'border-purple-600 ring-2 ring-purple-300 bg-purple-50 transform scale-102'
+        : 'border-gray-200 hover:border-gray-300'
+      } ${disabled ? 'opacity-60' : 'hover:shadow-lg'} bg-white flex flex-col h-full relative`}>
+
       {isActivePlan && (
         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
           <span className="bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full">
@@ -86,7 +86,7 @@ function PlanCard({ title, price, features, selected, onSelect, disabled, isActi
           </span>
         </div>
       )}
-      
+
       <h3 className="text-xl font-bold mb-2">{title}</h3>
       <div className="text-2xl font-semibold mb-4">{price}</div>
       <ul className="mb-6 flex-1 space-y-2">
@@ -97,31 +97,31 @@ function PlanCard({ title, price, features, selected, onSelect, disabled, isActi
           </li>
         ))}
       </ul>
-      
+
       {isActivePlan && !disabled && (
         <div className="mt-2 text-xs text-green-700 font-semibold text-center bg-green-100 py-1 px-2 rounded">
           Planul tău actual
         </div>
       )}
-      
+
       {!isActivePlan && onSelect && !disabled && !isAddon && (
         <button
           className={`w-full py-2 rounded font-semibold transition-colors ${selected
-              ? 'bg-purple-600 text-white hover:bg-purple-700'
-              : 'bg-purple-100 text-purple-800 hover:bg-purple-200'
-          }`}
+            ? 'bg-purple-600 text-white hover:bg-purple-700'
+            : 'bg-purple-100 text-purple-800 hover:bg-purple-200'
+            }`}
           onClick={onSelect}
         >
           Alege
         </button>
       )}
-      
+
       {isAddon && (
         <div className="text-xs text-gray-500 text-center py-1 px-2 rounded bg-gray-100">
           Serviciu adițional
         </div>
       )}
-      
+
       {disabled && <div className="text-xs text-gray-400 text-center">Activ automat la înregistrare</div>}
     </div>
   );

@@ -28,6 +28,8 @@ export const uploadCompanyLogo = asyncHandler(async (req, res) => {
   }
 
   console.log('Found employer:', employer.userId);
+  console.log('Employer ID:', employer._id);
+  console.log('Current companyProfile:', employer.companyProfile);
 
   // Ensure directory exists before operations
   const uploadDir = path.join(process.cwd(), 'public', 'companyLogos');
@@ -54,13 +56,23 @@ export const uploadCompanyLogo = asyncHandler(async (req, res) => {
   
   if (!employer.companyProfile) {
     employer.companyProfile = {};
+    console.log('Created new companyProfile object');
   }
   
   employer.companyProfile.logoUrl = logoUrl;
   console.log('Updated employer.companyProfile:', employer.companyProfile);
   
-  await employer.save();
+  // Mark as modified to ensure save
+  employer.markModified('companyProfile');
+  
+  const savedEmployer = await employer.save();
   console.log('Employer saved successfully');
+  console.log('Saved employer companyProfile:', savedEmployer.companyProfile);
+  
+  // Verify the save by fetching again
+  const verifyEmployer = await Employer.findById(req.user._id);
+  console.log('Verification - employer companyProfile:', verifyEmployer.companyProfile);
+  console.log('Verification - logo URL:', verifyEmployer.companyProfile?.logoUrl);
 
   sendSuccess(res, {
     logoUrl: logoUrl,

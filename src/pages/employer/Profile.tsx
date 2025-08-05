@@ -99,8 +99,16 @@ export default function EmployerProfile() {
   }, [employer]);
 
   const loadCompanyData = async () => {
-    if (!token || isLoadingCompany || hasLoadedCompany.current) return;
+    if (!token || isLoadingCompany || hasLoadedCompany.current) {
+      console.log('loadCompanyData skipped:', { 
+        hasToken: !!token, 
+        isLoadingCompany, 
+        hasLoadedCompany: hasLoadedCompany.current 
+      });
+      return;
+    }
     
+    console.log('=== LOADING COMPANY DATA ===');
     setIsLoadingCompany(true);
     hasLoadedCompany.current = true;
     
@@ -113,6 +121,10 @@ export default function EmployerProfile() {
       
       if (response.ok) {
         const data = await response.json();
+        console.log('Profile response data:', data);
+        console.log('Company profile from response:', data.data.companyProfile);
+        console.log('Logo URL from response:', data.data.companyProfile?.logoUrl);
+        
         setCompanyData(data.data.companyProfile);
         
         // Pre-populate form with existing data
@@ -141,7 +153,7 @@ export default function EmployerProfile() {
             }
           }
           
-          setFormData({
+          const newFormData = {
             name: company.name || "",
             cui: company.cui || "",
             location: company.location || "",
@@ -153,7 +165,10 @@ export default function EmployerProfile() {
             email: company.email || "",
             phone: phoneData,
             website: company.website || ""
-          });
+          };
+          
+          console.log('Setting form data:', newFormData);
+          setFormData(newFormData);
         }
       } else {
         console.error("Failed to load company data:", response.status);
@@ -282,15 +297,18 @@ export default function EmployerProfile() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    console.log('=== UPLOADING LOGO ===');
+    console.log('Selected file:', file.name, file.size, file.type);
+
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Doar fișiere imagine sunt permise!');
+      showError('Doar fișiere imagine sunt permise!');
       return;
     }
 
     // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('Fișierul este prea mare. Dimensiunea maximă este 5MB.');
+      showError('Fișierul este prea mare. Dimensiunea maximă este 5MB.');
       return;
     }
 
@@ -305,6 +323,7 @@ export default function EmployerProfile() {
       const formData = new FormData();
       formData.append('logo', file);
 
+      console.log('Sending upload request...');
       const response = await fetch(`${API_BASE_URL}/employer/upload-logo`, {
         method: 'POST',
         headers: {
@@ -313,8 +332,11 @@ export default function EmployerProfile() {
         body: formData
       });
 
+      console.log('Upload response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('Upload error:', errorData);
         if (errorData.error?.message?.includes("token")) {
           showError("Sesiunea a expirat. Te rugăm să te loghezi din nou.");
           navigate("/employer/login");
@@ -327,6 +349,7 @@ export default function EmployerProfile() {
       }
 
       const data = await response.json();
+      console.log('Upload success response:', data);
       showSuccess('Logo-ul a fost încărcat cu succes!');
       
       // Update form with the actual URL from backend
@@ -337,10 +360,12 @@ export default function EmployerProfile() {
 
       // Reset company loading flag to allow reload
       hasLoadedCompany.current = false;
+      console.log('Reset hasLoadedCompany flag, reloading data...');
       
       // Reload company data to get updated logo
       await loadCompanyData();
     } catch (error) {
+      console.error('Upload error:', error);
       showError('Eroare la încărcarea logo-ului');
       // Remove preview on error
       setLogoPreview(null);

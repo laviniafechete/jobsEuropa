@@ -27,7 +27,7 @@ const PLAN_OPTIONS = [
       'Acces la toți candidații',
       'Suport'
     ],
-    priceId: 'price_1O8tq8vo26lc0v3ocmjctl8gact4gnfk1_basic',
+    priceId: 'price_1O8tq8vo26lc0v3ocmjctl8gact4gnfk1_basic_test',
     isAddon: false
   },
   {
@@ -41,7 +41,7 @@ const PLAN_OPTIONS = [
       'Acces la toți candidații',
       'Suport prioritar'
     ],
-    priceId: 'price_1O8tq8vo26lc0v3ocmjctl8gact4gnfk1_premium',
+    priceId: 'price_1O8tq8vo26lc0v3ocmjctl8gact4gnfk1_premium_test',
     isAddon: false
   },
   {
@@ -53,7 +53,7 @@ const PLAN_OPTIONS = [
       'Contact direct cu aplicanții',
       'Statistici de bază - vizualizări per anunț'
     ],
-    priceId: 'price_1O8tq8vo26lc0v3ocmjctl8gact4gnfk1_single',
+    priceId: 'price_1O8tq8vo26lc0v3ocmjctl8gact4gnfk1_single_test',
     isAddon: true
   },
   {
@@ -65,7 +65,7 @@ const PLAN_OPTIONS = [
       'Postare în 48h pe paginile de social media: Facebook, TikTok, Instagram',
 
     ],
-    priceId: 'price_1O8tq8vo26lc0v3ocmjctl8gact4gnfk1_promotion',
+    priceId: 'price_1O8tq8vo26lc0v3ocmjctl8gact4gnfk1_promotion_test',
     isAddon: true
   }
 ];

@@ -1,13 +1,15 @@
 import React from "react";
-import { Briefcase, MapPin, Edit } from "lucide-react";
+import { Briefcase, MapPin, Edit, Star } from "lucide-react";
 import type { JobAd } from "../../context/EmployerContext";
 
 export default function JobAdCard({
   ad,
   onEdit,
+  onPromote,
 }: {
   ad: JobAd;
   onEdit: () => void;
+  onPromote?: () => void;
 }) {
   function formatSalary(salary: any) {
     if (!salary) return 'Salariu negociabil';
@@ -70,12 +72,22 @@ export default function JobAdCard({
             <b>Beneficii:</b> {ad.benefits.join(", ")}
           </div>
         )}
-        <button
-          className="inline-flex items-center gap-1 text-green-700 hover:text-green-900 text-sm font-semibold"
-          onClick={onEdit}
-        >
-          <Edit className="w-4 h-4" /> Editează
-        </button>
+        <div className="flex gap-2">
+          <button
+            className="inline-flex items-center gap-1 text-green-700 hover:text-green-900 text-sm font-semibold"
+            onClick={onEdit}
+          >
+            <Edit className="w-4 h-4" /> Editează
+          </button>
+          {onPromote && (
+            <button
+              className="inline-flex items-center gap-1 text-purple-700 hover:text-purple-900 text-sm font-semibold"
+              onClick={onPromote}
+            >
+              <Star className="w-4 h-4" /> Promovează
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

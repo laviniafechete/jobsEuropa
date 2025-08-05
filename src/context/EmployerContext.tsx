@@ -1,14 +1,19 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { API_BASE_URL } from "../config/env";
 
-type JobAd = {
+export type JobAd = {
   id: string;
   title: string;
   requirements: string;
+  description?: string;
   location: string;
   type: string;
-  salary: string;
+  salary: string | { min?: number; max?: number; currency?: string };
   domain: string;
+  category?: string;
+  experience?: string;
+  skills?: string[];
+  benefits?: string[];
   image?: string;
 };
 

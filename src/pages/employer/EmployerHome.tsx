@@ -13,7 +13,8 @@ const PLAN_OPTIONS = [
       'Contact direct cu aplicanții',
       'Statistici de bază - vizualizări per anunț'
     ],
-    disabled: true
+    disabled: true,
+    isAddon: false
   },
   {
     key: 'basic',
@@ -26,7 +27,8 @@ const PLAN_OPTIONS = [
       'Acces la toți candidații',
       'Suport'
     ],
-    priceId: 'price_1NxxxBasic'
+    priceId: 'price_1NxxxBasic',
+    isAddon: false
   },
   {
     key: 'premium',
@@ -39,7 +41,8 @@ const PLAN_OPTIONS = [
       'Acces la toți candidații',
       'Suport prioritar'
     ],
-    priceId: 'price_1NxxxPremium'
+    priceId: 'price_1NxxxPremium',
+    isAddon: false
   },
   {
     key: 'single',
@@ -50,7 +53,8 @@ const PLAN_OPTIONS = [
       'Contact direct cu aplicanții',
       'Statistici de bază - vizualizări per anunț'
     ],
-    priceId: 'price_1NxxxSingle'
+    priceId: 'price_1NxxxSingle',
+    isAddon: true
   },
   {
     key: 'promotion',
@@ -61,13 +65,29 @@ const PLAN_OPTIONS = [
       'Postare în 48h pe paginile de social media',
       'Facebook, TikTok, Instagram'
     ],
-    priceId: 'price_1NxxxPromotion'
+    priceId: 'price_1NxxxPromotion',
+    isAddon: true
   }
 ];
 
-function PlanCard({ title, price, features, selected, onSelect, disabled, isActivePlan }: any) {
+function PlanCard({ title, price, features, selected, onSelect, disabled, isActivePlan, isAddon }: any) {
   return (
-    <div className={`border rounded-lg p-6 shadow-sm ${isActivePlan ? 'border-green-600 ring-2 ring-green-300 bg-green-50' : selected ? 'border-purple-600 ring-2 ring-purple-300' : 'border-gray-200'} ${disabled ? 'opacity-60' : 'hover:shadow-lg transition'} bg-white flex flex-col h-full`}>
+    <div className={`border rounded-lg p-6 shadow-sm transition-all duration-200 ${
+      isActivePlan 
+        ? 'border-green-600 ring-2 ring-green-300 bg-green-50 transform scale-105' 
+        : selected 
+          ? 'border-purple-600 ring-2 ring-purple-300 bg-purple-50 transform scale-102' 
+          : 'border-gray-200 hover:border-gray-300'
+    } ${disabled ? 'opacity-60' : 'hover:shadow-lg'} bg-white flex flex-col h-full relative`}>
+      
+      {isActivePlan && (
+        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+          <span className="bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+            ACTIV
+          </span>
+        </div>
+      )}
+      
       <h3 className="text-xl font-bold mb-2">{title}</h3>
       <div className="text-2xl font-semibold mb-4">{price}</div>
       <ul className="mb-6 flex-1 space-y-2">
@@ -78,19 +98,32 @@ function PlanCard({ title, price, features, selected, onSelect, disabled, isActi
           </li>
         ))}
       </ul>
+      
       {isActivePlan && !disabled && (
         <div className="mt-2 text-xs text-green-700 font-semibold text-center bg-green-100 py-1 px-2 rounded">
           Planul tău actual
         </div>
       )}
-      {!isActivePlan && onSelect && !disabled && (
+      
+      {!isActivePlan && onSelect && !disabled && !isAddon && (
         <button
-          className={`w-full py-2 rounded font-semibold ${selected ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-800 hover:bg-purple-200'}`}
+          className={`w-full py-2 rounded font-semibold transition-colors ${
+            selected 
+              ? 'bg-purple-600 text-white hover:bg-purple-700' 
+              : 'bg-purple-100 text-purple-800 hover:bg-purple-200'
+          }`}
           onClick={onSelect}
         >
           Alege
         </button>
       )}
+      
+      {isAddon && (
+        <div className="text-xs text-gray-500 text-center py-1 px-2 rounded bg-gray-100">
+          Serviciu adițional
+        </div>
+      )}
+      
       {disabled && <div className="text-xs text-gray-400 text-center">Activ automat la înregistrare</div>}
     </div>
   );
@@ -252,17 +285,23 @@ export default function EmployerHome() {
             Aceasta este pagina ta principală ca angajator.
           </p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">            
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <button
-              onClick={() => (employer?.hasProfileCompleted === false) || !canUsePremium ? null : navigate("/employer/post-job")}
-              className={`p-4 bg-green-50 rounded-lg border border-green-200 transition ${(employer?.hasProfileCompleted === false) || !canUsePremium ? 'opacity-60 cursor-not-allowed' : 'hover:bg-green-100'}`}
-              disabled={(employer?.hasProfileCompleted === false) || !canUsePremium}
+              onClick={() => navigate("/employer/profile")}
+              className="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition"
+            >
+              <h3 className="font-semibold text-blue-900">Profil companie</h3>
+              <p className="text-sm text-blue-700">Gestionează informațiile companiei</p>
+            </button>
+            
+            <button
+              onClick={() => (employer?.hasProfileCompleted === false) ? null : navigate("/employer/post-job")}
+              className={`p-4 bg-green-50 rounded-lg border border-green-200 transition ${(employer?.hasProfileCompleted === false) ? 'opacity-60 cursor-not-allowed' : 'hover:bg-green-100'}`}
+              disabled={(employer?.hasProfileCompleted === false)}
               title={
                 employer?.hasProfileCompleted === false
                   ? 'Completează profilul companiei pentru a posta joburi'
-                  : !canUsePremium
-                    ? 'Activează un abonament pentru a posta joburi'
-                    : ''
+                  : ''
               }
             >
               <h3 className="font-semibold text-green-900">Postează job</h3>
@@ -286,14 +325,16 @@ export default function EmployerHome() {
             </button>
           </div>
 
-                 {/* Oferte de abonament - sub mesajul de bun venit */}
-                 <div className="mb-8">
+          {/* Oferte de abonament - sub mesajul de bun venit */}
+          <div className="mb-8">
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Planuri de abonament</h2>
               <p className="text-gray-600">Alege planul care se potrivește cel mai bine nevoilor tale</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
-              {PLAN_OPTIONS.map(plan => (
+            
+            {/* Planuri principale */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              {PLAN_OPTIONS.filter(plan => !plan.isAddon).map(plan => (
                 <PlanCard
                   key={plan.key}
                   title={plan.title}
@@ -303,9 +344,31 @@ export default function EmployerHome() {
                   onSelect={plan.disabled || activePlanKey === plan.key ? undefined : () => setSelectedPlan(plan.key as 'basic' | 'premium' | 'single' | 'promotion')}
                   disabled={plan.disabled}
                   isActivePlan={activePlanKey === plan.key && !plan.disabled}
+                  isAddon={plan.isAddon}
                 />
               ))}
             </div>
+            
+            {/* Servicii adiționale */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Servicii adiționale</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                {PLAN_OPTIONS.filter(plan => plan.isAddon).map(plan => (
+                  <PlanCard
+                    key={plan.key}
+                    title={plan.title}
+                    price={plan.price}
+                    features={plan.features}
+                    selected={false}
+                    onSelect={undefined}
+                    disabled={false}
+                    isActivePlan={false}
+                    isAddon={plan.isAddon}
+                  />
+                ))}
+              </div>
+            </div>
+            
             {activePlanKey !== 'trial' && (
               <div className="flex justify-center">
                 <button

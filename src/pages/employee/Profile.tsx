@@ -85,6 +85,15 @@ const getLevelLabel = (level: string) => {
   return option ? option.label : level;
 };
 
+// Get base URL without /api
+const getImageBaseUrl = () => {
+  if (API_BASE_URL.includes('localhost')) {
+    return 'http://localhost:5001';
+  }
+  // For production, use HTTPS
+  return 'https://www.jobs-europa.com';
+};
+
 export default function Profile() {
   const navigate = useNavigate();
   const { user, token, updateUser } = useAuthStore();
@@ -218,7 +227,7 @@ export default function Profile() {
     // Debug logging for CV image
     if (cvImageUrl) {
       console.log('CV Image URL changed to:', cvImageUrl);
-      console.log('Full image URL:', `http://localhost:5001${cvImageUrl}`);
+      console.log('Full image URL:', `${getImageBaseUrl()}${cvImageUrl}`);
     }
   }, [user, cvImageUrl]);
 
@@ -531,7 +540,7 @@ export default function Profile() {
                   {cvImageUrl ? (
                     <div className="relative">
                       <img
-                        src={`http://localhost:5001${cvImageUrl}`}
+                        src={`${getImageBaseUrl()}${cvImageUrl}`}
                         alt="CV"
                         className="w-24 h-24 rounded-lg object-cover border"
                         onError={(e) => {

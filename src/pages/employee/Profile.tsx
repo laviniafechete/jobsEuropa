@@ -206,7 +206,12 @@ export default function Profile() {
     if (user?.hasCompletedCv && !hasLoadedCV.current && !isLoadingCV) {
       loadCVData();
     }
-  }, [user]);
+    
+    // Debug logging for CV image
+    if (cvImageUrl) {
+      console.log('CV Image URL:', `${API_BASE_URL.replace('/api', '')}${cvImageUrl}`);
+    }
+  }, [user, cvImageUrl]);
 
   const loadCVData = async () => {
     if (!token || isLoadingCV || hasLoadedCV.current) return;
@@ -223,11 +228,15 @@ export default function Profile() {
       
       if (response.ok) {
         const data = await response.json();
+        console.log('CV Data response:', data);
         setCvData(data.data.cv);
         
         // Load CV image URL from user data
         if (data.data.user?.cvImageUrl) {
+          console.log('Setting CV image URL:', data.data.user.cvImageUrl);
           setCvImageUrl(data.data.user.cvImageUrl);
+        } else {
+          console.log('No CV image URL found in response');
         }
         
         // Pre-populate form with existing data
@@ -520,6 +529,7 @@ export default function Profile() {
                           console.error('Error loading CV image:', e);
                           e.currentTarget.style.display = 'none';
                         }}
+                        onLoad={() => console.log('CV image loaded successfully')}
                       />
                       {isEditing && (
                         <button

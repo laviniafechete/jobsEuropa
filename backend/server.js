@@ -196,15 +196,17 @@ const connectDB = async () => {
 // Ensure required directories exist
 const ensureDirectories = () => {
   const directories = [
-    'public',
-    'public/companyLogos',
-    'public/favicons'
+    '../public',
+    '../public/companyLogos',
+    '../public/cvImages',
+    '../public/favicons'
   ];
   
   directories.forEach(dir => {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-      console.log(`📁 Created directory: ${dir}`);
+    const fullPath = path.join(__dirname, dir);
+    if (!fs.existsSync(fullPath)) {
+      fs.mkdirSync(fullPath, { recursive: true });
+      console.log(`📁 Created directory: ${fullPath}`);
     }
   });
 };

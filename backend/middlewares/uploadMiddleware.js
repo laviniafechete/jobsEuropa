@@ -5,8 +5,9 @@ import fs from 'fs';
 
 // Ensure directories exist
 const ensureDirectoryExists = (dirPath) => {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
+  const fullPath = path.join(process.cwd(), '..', dirPath);
+  if (!fs.existsSync(fullPath)) {
+    fs.mkdirSync(fullPath, { recursive: true });
   }
 };
 
@@ -19,7 +20,7 @@ ensureDirectoryExists('public/favicons');
 // Company logo storage
 const companyLogoStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'public/companyLogos/');
+    cb(null, path.join(process.cwd(), '..', 'public', 'companyLogos'));
   },
   filename: (req, file, cb) => {
     const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
@@ -30,7 +31,7 @@ const companyLogoStorage = multer.diskStorage({
 // CV image storage
 const cvImageStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'public/cvImages/');
+    cb(null, path.join(process.cwd(), '..', 'public', 'cvImages'));
   },
   filename: (req, file, cb) => {
     const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;

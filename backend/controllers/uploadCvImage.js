@@ -21,7 +21,7 @@ export const uploadCvImage = async (req, res) => {
 
     // Delete old image if it exists
     if (user.cvImageUrl) {
-      const oldImagePath = path.join(process.cwd(), 'public', user.cvImageUrl.replace('/public/', ''));
+      const oldImagePath = path.join(process.cwd(), '..', 'public', user.cvImageUrl.replace('/public/', ''));
       if (fs.existsSync(oldImagePath)) {
         fs.unlinkSync(oldImagePath);
         console.log('Deleted old CV image:', oldImagePath);
@@ -57,7 +57,7 @@ export const deleteCvImage = async (req, res) => {
     }
 
     // Delete file from server
-    const imagePath = path.join(process.cwd(), 'public', user.cvImageUrl.replace('/public/', ''));
+    const imagePath = path.join(process.cwd(), '..', 'public', user.cvImageUrl.replace('/public/', ''));
     if (fs.existsSync(imagePath)) {
       fs.unlinkSync(imagePath);
       console.log('Deleted CV image file:', imagePath);

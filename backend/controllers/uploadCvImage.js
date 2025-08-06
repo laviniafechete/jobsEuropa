@@ -6,34 +6,57 @@ import path from 'path';
 export const uploadCvImage = async (req, res) => {
   try {
     console.log('=== CV IMAGE UPLOAD DEBUG ===');
-    console.log('User:', req.user);
+    console.log('User:', req.user?.userId);
     console.log('UserType:', req.userType);
-    console.log('File:', req.file);
+    console.log('File:', req.file ? {
+      filename: req.file.filename,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      destination: req.file.destination,
+      path: req.file.path
+    } : 'No file');
 
     if (!req.file) {
+      console.log('ERROR: No file provided');
       return sendError(res, 'Nu a fost selectat niciun fișier', 400);
     }
 
     const user = await User.findById(req.user._id);
     if (!user) {
+      console.log('ERROR: User not found');
       return sendError(res, 'Utilizatorul nu a fost găsit', 404);
     }
+
+    console.log('User found:', user.userId);
+    console.log('Current CV image URL:', user.cvImageUrl);
 
     // Delete old image if it exists
     if (user.cvImageUrl) {
       const oldImagePath = path.join(process.cwd(), '..', 'public', user.cvImageUrl.replace('/public/', ''));
+      console.log('Attempting to delete old image:', oldImagePath);
       if (fs.existsSync(oldImagePath)) {
         fs.unlinkSync(oldImagePath);
         console.log('Deleted old CV image:', oldImagePath);
+      } else {
+        console.log('Old image file not found:', oldImagePath);
       }
     }
 
     // Save new image URL
     const imageUrl = `/public/cvImages/${req.file.filename}`;
+    console.log('New image URL:', imageUrl);
+    
     user.cvImageUrl = imageUrl;
-    await user.save();
+    const savedUser = await user.save();
+    
+    console.log('User saved successfully');
+    console.log('Updated CV image URL:', savedUser.cvImageUrl);
 
-    console.log('Updated user CV image URL:', user.cvImageUrl);
+    // Verify file exists
+    const newImagePath = path.join(process.cwd(), '..', 'public', 'cvImages', req.file.filename);
+    console.log('Checking if new image exists at:', newImagePath);
+    console.log('File exists:', fs.existsSync(newImagePath));
 
     sendSuccess(res, { imageUrl }, 'Imagine CV încărcată cu succes');
   } catch (error) {

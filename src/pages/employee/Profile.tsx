@@ -144,15 +144,24 @@ export default function Profile() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    console.log('=== FRONTEND IMAGE UPLOAD DEBUG ===');
+    console.log('Selected file:', {
+      name: file.name,
+      type: file.type,
+      size: file.size
+    });
+
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
+      console.log('ERROR: Invalid file type:', file.type);
       showError('Doar fișiere imagine sunt permise (JPEG, PNG, GIF, WebP)');
       return;
     }
 
     // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
+      console.log('ERROR: File too large:', file.size);
       showError('Fișierul este prea mare. Dimensiunea maximă este 5MB');
       return;
     }
@@ -160,8 +169,10 @@ export default function Profile() {
     setIsUploadingImage(true);
     const formData = new FormData();
     formData.append('image', file);
+    console.log('FormData created with file');
 
     try {
+      console.log('Making upload request to:', `${API_BASE_URL}/cv/upload-image`);
       const response = await fetch(`${API_BASE_URL}/cv/upload-image`, {
         method: 'POST',
         headers: {
@@ -170,11 +181,16 @@ export default function Profile() {
         body: formData,
       });
 
+      console.log('Upload response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
-        console.log('Upload response:', data);
+        console.log('Upload response data:', data);
         console.log('Setting cvImageUrl to:', data.data.imageUrl);
+        
         setCvImageUrl(data.data.imageUrl);
+        console.log('cvImageUrl state updated');
+        
         showSuccess('Imagine CV încărcată cu succes!');
         
         // Force re-render to show the image immediately
@@ -184,13 +200,15 @@ export default function Profile() {
         }, 100);
       } else {
         const errorData = await response.json();
+        console.log('Upload error response:', errorData);
         showError(errorData.message || 'Eroare la încărcarea imaginii');
       }
     } catch (error) {
-      console.error('Error uploading image:', error);
+      console.error('Upload fetch error:', error);
       showError('Eroare la încărcarea imaginii');
     } finally {
       setIsUploadingImage(false);
+      console.log('Upload process completed');
     }
   };
 
@@ -225,9 +243,15 @@ export default function Profile() {
     }
     
     // Debug logging for CV image
+    console.log('=== CV IMAGE STATE DEBUG ===');
+    console.log('cvImageUrl:', cvImageUrl);
+    console.log('cvImageUrl type:', typeof cvImageUrl);
+    console.log('cvImageUrl truthy:', !!cvImageUrl);
+    
     if (cvImageUrl) {
-      console.log('CV Image URL changed to:', cvImageUrl);
-      console.log('Full image URL:', `${getImageBaseUrl()}${cvImageUrl}`);
+      const fullImageUrl = `${getImageBaseUrl()}${cvImageUrl}`;
+      console.log('Full image URL:', fullImageUrl);
+      console.log('Image base URL:', getImageBaseUrl());
     }
   }, [user, cvImageUrl]);
 
@@ -544,10 +568,15 @@ export default function Profile() {
                         alt="CV"
                         className="w-24 h-24 rounded-lg object-cover border"
                         onError={(e) => {
-                          console.error('Error loading CV image:', e);
+                          console.error('=== IMAGE LOAD ERROR ===');
+                          console.error('Failed to load image:', `${getImageBaseUrl()}${cvImageUrl}`);
+                          console.error('Error event:', e);
                           e.currentTarget.style.display = 'none';
                         }}
-                        onLoad={() => console.log('CV image loaded successfully')}
+                        onLoad={() => {
+                          console.log('=== IMAGE LOADED SUCCESSFULLY ===');
+                          console.log('Loaded image:', `${getImageBaseUrl()}${cvImageUrl}`);
+                        }}
                       />
                       {isEditing && (
                         <button

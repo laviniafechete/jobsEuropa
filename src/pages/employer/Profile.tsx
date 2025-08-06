@@ -1,5 +1,5 @@
 import { useAuthStore } from "../../stores/authStore";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { useSnackbar } from "../../hooks/useSnackbar";
 import { API_BASE_URL } from "../../config/env";
@@ -15,7 +15,8 @@ import {
   Globe,
   FileText,
   Upload,
-  Trash2
+  Trash2,
+  AlertCircle
 } from "lucide-react";
 import PhoneInput from '../../components/PhoneInput';
 
@@ -59,6 +60,8 @@ export default function EmployerProfile() {
   const { token, employer, updateEmployer } = useAuthStore();
   const navigate = useNavigate();
   const { showSuccess, showError } = useSnackbar();
+  const [searchParams] = useSearchParams();
+  const fromCompletion = searchParams.get('from') === 'completion';
   
   // Profile editing states
   const [isEditing, setIsEditing] = useState(false);
@@ -66,6 +69,7 @@ export default function EmployerProfile() {
   const [companyData, setCompanyData] = useState<any>(null);
   const [isLoadingCompany, setIsLoadingCompany] = useState(false);
   const hasLoadedCompany = useRef(false);
+  const [showCompletionBanner, setShowCompletionBanner] = useState(fromCompletion);
   
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -90,6 +94,16 @@ export default function EmployerProfile() {
       loadCompanyData();
     }
   }, [employer]);
+
+  // Clean URL parameter and manage completion flow
+  useEffect(() => {
+    if (fromCompletion) {
+      // Clean the URL parameter
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('from');
+      navigate(`/employer/profile?${newSearchParams.toString()}`, { replace: true });
+    }
+  }, [fromCompletion, navigate, searchParams]);
 
   const loadCompanyData = async () => {
     if (!token || isLoadingCompany || hasLoadedCompany.current) {
@@ -490,6 +504,41 @@ export default function EmployerProfile() {
             </div>
           </div>
         </div>
+
+        {/* Completion Banner */}
+        {showCompletionBanner && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="text-blue-900 font-semibold mb-1">
+                  Completează profilul companiei
+                </h3>
+                <p className="text-blue-800 text-sm mb-3">
+                  Pentru a posta job-uri și a primi aplicații relevante, completează informațiile despre compania ta. 
+                  Poți vizualiza mai jos toate câmpurile disponibile și apoi le poți edita.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setIsEditing(true);
+                      setShowCompletionBanner(false);
+                    }}
+                    className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+                  >
+                    Editează acum
+                  </button>
+                  <button
+                    onClick={() => setShowCompletionBanner(false)}
+                    className="px-3 py-1.5 text-blue-600 text-sm rounded-lg hover:bg-blue-100 transition"
+                  >
+                    Am înțeles
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Profile Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

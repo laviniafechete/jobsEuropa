@@ -201,7 +201,7 @@ export default function EmployerHome() {
 
   const handleCompleteProfile = () => {
     setShowProfileModal(false);
-    navigate("/employer/profile");
+    navigate("/employer/profile?from=completion");
   };
 
   const handleSkipProfile = () => {

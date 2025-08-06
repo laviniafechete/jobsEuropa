@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../stores/authStore";
 import { useSnackbar } from "../../hooks/useSnackbar";
 import PhoneInput from '../../components/PhoneInput';
 import { API_BASE_URL } from "../../config/env";
+import { User, Upload, X } from "lucide-react";
 
 const educationOptions = [
   { value: "", label: "Selectează nivelul de educație" },
@@ -88,6 +89,11 @@ export default function EmployeeCVForm() {
   const [userLanguages, setUserLanguages] = useState<Array<{id: string, language: string, level: string, customLanguage?: string}>>([]);
   const [newLanguage, setNewLanguage] = useState({ language: "", level: "", customLanguage: "" });
   const [interestDomainsList, setInterestDomainsList] = useState<string[]>([]);
+  
+  // Image upload states
+  const [cvImageUrl, setCvImageUrl] = useState<string>("");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Pre-populate form with existing data if available
@@ -98,6 +104,36 @@ export default function EmployeeCVForm() {
       }));
     }
   }, [user]);
+
+  // Load existing CV image
+  useEffect(() => {
+    const loadCvImage = async () => {
+      if (!user?.hasCompletedCv || !token) return;
+
+      try {
+        console.log('=== LOADING EXISTING CV IMAGE ===');
+        const response = await fetch(`${API_BASE_URL}/cv/get`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('CV data loaded:', data);
+          
+          if (data.data?.user?.cvImageUrl) {
+            console.log('Setting existing CV image:', data.data.user.cvImageUrl);
+            setCvImageUrl(data.data.user.cvImageUrl);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading CV image:', error);
+      }
+    };
+
+    loadCvImage();
+  }, [user, token]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -150,6 +186,115 @@ export default function EmployeeCVForm() {
   const getInterestDomainLabel = (value: string) => {
     const domain = DOMAINS.find(d => d.value === value);
     return domain ? domain.label : value;
+  };
+
+  // Image helper function
+  const getImageBaseUrl = () => {
+    if (API_BASE_URL.includes('localhost')) {
+      return 'http://localhost:5001';
+    }
+    return 'https://www.jobs-europa.com';
+  };
+
+  // Image upload function
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    console.log('=== CV FORM IMAGE UPLOAD DEBUG ===');
+    console.log('Selected file:', {
+      name: file.name,
+      type: file.type,
+      size: file.size
+    });
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      console.log('ERROR: Invalid file type:', file.type);
+      showError('Doar fișiere imagine sunt permise (JPEG, PNG, GIF, WebP)');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      console.log('ERROR: File too large:', file.size);
+      showError('Fișierul este prea mare. Dimensiunea maximă este 5MB');
+      return;
+    }
+
+    setIsUploadingImage(true);
+    const formData = new FormData();
+    formData.append('image', file);
+    console.log('FormData created with file');
+
+    try {
+      console.log('Making upload request to:', `${API_BASE_URL}/cv/upload-image`);
+      const response = await fetch(`${API_BASE_URL}/cv/upload-image`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      console.log('Upload response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Upload response data:', data);
+        console.log('Setting cvImageUrl to:', data.data.imageUrl);
+        
+        setCvImageUrl(data.data.imageUrl);
+        console.log('cvImageUrl state updated');
+        
+        showSuccess('Imagine CV încărcată cu succes!');
+        
+        // Force re-render to show the image immediately
+        setTimeout(() => {
+          console.log('Force re-setting cvImageUrl to:', data.data.imageUrl);
+          setCvImageUrl(data.data.imageUrl);
+        }, 100);
+      } else {
+        const errorData = await response.json();
+        console.log('Upload error response:', errorData);
+        showError(errorData.message || 'Eroare la încărcarea imaginii');
+      }
+    } catch (error) {
+      console.error('Upload fetch error:', error);
+      showError('Eroare la încărcarea imaginii');
+    } finally {
+      setIsUploadingImage(false);
+      console.log('Upload process completed');
+    }
+  };
+
+  // Image delete function
+  const handleDeleteImage = async () => {
+    try {
+      console.log('=== CV FORM DELETE IMAGE ===');
+      console.log('Deleting image:', cvImageUrl);
+      
+      const response = await fetch(`${API_BASE_URL}/cv/delete-image`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        setCvImageUrl('');
+        console.log('Image deleted successfully');
+        showSuccess('Imagine ștearsă cu succes!');
+      } else {
+        const errorData = await response.json();
+        console.log('Delete error response:', errorData);
+        showError(errorData.message || 'Eroare la ștergerea imaginii');
+      }
+    } catch (error) {
+      console.error('Delete fetch error:', error);
+      showError('Eroare la ștergerea imaginii');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -234,55 +379,117 @@ export default function EmployeeCVForm() {
             {/* Personal Information */}
             <div className="bg-gray-50 p-4 rounded-lg">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Informații personale</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <PhoneInput
-                    label="Telefon"
-                    value={formData.phone}
-                    onChange={val => setFormData({ ...formData, phone: val })}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Data nașterii
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* CV Image Upload */}
+                <div className="md:col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fotografie CV
                   </label>
-                  <input
-                    type="date"
-                    name="birthDate"
-                    value={formData.birthDate}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="flex flex-col items-center">
+                    {cvImageUrl ? (
+                      <div className="relative">
+                        <img
+                          src={`${getImageBaseUrl()}${cvImageUrl}`}
+                          alt="CV"
+                          className="w-32 h-32 rounded-lg object-cover border"
+                          onError={(e) => {
+                            console.error('=== CV FORM IMAGE LOAD ERROR ===');
+                            console.error('Failed to load image:', `${getImageBaseUrl()}${cvImageUrl}`);
+                            console.error('Error event:', e);
+                            e.currentTarget.style.display = 'none';
+                          }}
+                          onLoad={() => {
+                            console.log('=== CV FORM IMAGE LOADED SUCCESSFULLY ===');
+                            console.log('Loaded image:', `${getImageBaseUrl()}${cvImageUrl}`);
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleDeleteImage}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                          title="Șterge imaginea"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
+                        <User className="w-12 h-12 text-gray-400" />
+                      </div>
+                    )}
+                    
+                    <div className="mt-2 w-full">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploadingImage}
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Upload className="w-4 h-4" />
+                        {isUploadingImage ? 'Se încarcă...' : cvImageUrl ? 'Schimbă imaginea' : 'Încarcă imagine'}
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Gen
-                  </label>
-                  <select
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Selectează</option>
-                    <option value="male">Masculin</option>
-                    <option value="female">Feminin</option>
-                    <option value="other">Altul</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Locație
-                  </label>
-                  <input
-                    type="text"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Oraș, Țară"
-                  />
+
+                {/* Form fields - adjusted to md:col-span-2 */}
+                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <PhoneInput
+                      label="Telefon"
+                      value={formData.phone}
+                      onChange={val => setFormData({ ...formData, phone: val })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Data nașterii
+                    </label>
+                    <input
+                      type="date"
+                      name="birthDate"
+                      value={formData.birthDate}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Gen
+                    </label>
+                    <select
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Selectează</option>
+                      <option value="male">Masculin</option>
+                      <option value="female">Feminin</option>
+                      <option value="other">Altul</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Locație
+                    </label>
+                    <input
+                      type="text"
+                      name="location"
+                      value={formData.location}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Oraș, Țară"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

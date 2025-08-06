@@ -31,10 +31,14 @@ const companyLogoStorage = multer.diskStorage({
 // CV image storage
 const cvImageStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(process.cwd(), '..', 'public', 'cvImages'));
+    const uploadPath = path.join(process.cwd(), '..', 'public', 'cvImages');
+    console.log('CV Image upload path:', uploadPath);
+    console.log('Current working directory:', process.cwd());
+    cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
     const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
+    console.log('CV Image filename:', uniqueName);
     cb(null, uniqueName);
   }
 });

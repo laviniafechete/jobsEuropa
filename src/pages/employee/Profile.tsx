@@ -164,8 +164,15 @@ export default function Profile() {
       if (response.ok) {
         const data = await response.json();
         console.log('Upload response:', data);
+        console.log('Setting cvImageUrl to:', data.data.imageUrl);
         setCvImageUrl(data.data.imageUrl);
         showSuccess('Imagine CV încărcată cu succes!');
+        
+        // Force re-render to show the image immediately
+        setTimeout(() => {
+          console.log('Force re-setting cvImageUrl to:', data.data.imageUrl);
+          setCvImageUrl(data.data.imageUrl);
+        }, 100);
       } else {
         const errorData = await response.json();
         showError(errorData.message || 'Eroare la încărcarea imaginii');
@@ -210,7 +217,8 @@ export default function Profile() {
     
     // Debug logging for CV image
     if (cvImageUrl) {
-      console.log('CV Image URL:', `http://localhost:5001${cvImageUrl}`);
+      console.log('CV Image URL changed to:', cvImageUrl);
+      console.log('Full image URL:', `http://localhost:5001${cvImageUrl}`);
     }
   }, [user, cvImageUrl]);
 

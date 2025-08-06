@@ -19,6 +19,9 @@ export const getCv = asyncHandler(async (req, res) => {
   }
 
   sendSuccess(res, {
-    cv: cv.toObject()
+    cv: cv.toObject(),
+    user: {
+      cvImageUrl: user.cvImageUrl
+    }
   }, "CV obținut cu succes");
 }); 

@@ -3,68 +3,92 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 
-// Ensure companyLogos directory exists
+// Ensure directories exist
 const ensureDirectoryExists = (dirPath) => {
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
-    console.log(`Created directory: ${dirPath}`);
   }
 };
 
-// Configure storage for company logos
+// Create directories
+ensureDirectoryExists('public');
+ensureDirectoryExists('public/companyLogos');
+ensureDirectoryExists('public/cvImages');
+ensureDirectoryExists('public/favicons');
+
+// Company logo storage
 const companyLogoStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = 'public/companyLogos/';
-    ensureDirectoryExists(uploadDir);
-    cb(null, uploadDir);
+    cb(null, 'public/companyLogos/');
   },
   filename: (req, file, cb) => {
-    // Generate unique filename with original extension
     const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
     cb(null, uniqueName);
   }
 });
 
-// File filter for images
-const imageFilter = (req, file, cb) => {
-  // Accept only image files
-  if (file.mimetype.startsWith('image/')) {
-    cb(null, true);
-  } else {
-    cb(new Error('Doar fișiere imagine sunt permise!'), false);
+// CV image storage
+const cvImageStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'public/cvImages/');
+  },
+  filename: (req, file, cb) => {
+    const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
+    cb(null, uniqueName);
   }
+});
+
+// Image filter
+const imageFilter = (req, file, cb) => {
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+  const maxSize = 5 * 1024 * 1024; // 5MB
+
+  if (!allowedTypes.includes(file.mimetype)) {
+    return cb(new Error('Doar fișiere imagine sunt permise (JPEG, PNG, GIF, WebP)'), false);
+  }
+
+  if (file.size > maxSize) {
+    return cb(new Error('Fișierul este prea mare. Dimensiunea maximă este 5MB'), false);
+  }
+
+  cb(null, true);
 };
 
-// Configure multer for company logo upload
+// Multer instances
 export const uploadCompanyLogo = multer({
   storage: companyLogoStorage,
   fileFilter: imageFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    fileSize: 5 * 1024 * 1024 // 5MB
+  }
+});
+
+export const uploadCvImage = multer({
+  storage: cvImageStorage,
+  fileFilter: imageFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB
   }
 });
 
 // Error handling middleware
-export const handleUploadError = (error, req, res, next) => {
-  if (error instanceof multer.MulterError) {
-    if (error.code === 'LIMIT_FILE_SIZE') {
+export const handleUploadError = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({
         success: false,
-        error: {
-          message: 'Fișierul este prea mare. Dimensiunea maximă este 5MB.'
-        }
+        message: 'Fișierul este prea mare. Dimensiunea maximă este 5MB'
       });
     }
-  }
-  
-  if (error.message === 'Doar fișiere imagine sunt permise!') {
     return res.status(400).json({
       success: false,
-      error: {
-        message: error.message
-      }
+      message: 'Eroare la upload: ' + err.message
+    });
+  } else if (err) {
+    return res.status(400).json({
+      success: false,
+      message: err.message
     });
   }
-  
-  next(error);
+  next();
 }; 

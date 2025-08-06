@@ -95,6 +95,9 @@ export default function Profile() {
   const [cvData, setCvData] = useState<any>(null);
   const [isLoadingCV, setIsLoadingCV] = useState(false);
   const hasLoadedCV = useRef(false);
+  const [cvImageUrl, setCvImageUrl] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
     experience: "",
@@ -128,6 +131,76 @@ export default function Profile() {
     setUserLanguages(prev => prev.filter(lang => lang.id !== id));
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      showError('Doar fișiere imagine sunt permise (JPEG, PNG, GIF, WebP)');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      showError('Fișierul este prea mare. Dimensiunea maximă este 5MB');
+      return;
+    }
+
+    setIsUploadingImage(true);
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/cv/upload-image`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCvImageUrl(data.data.imageUrl);
+        showSuccess('Imagine CV încărcată cu succes!');
+      } else {
+        const errorData = await response.json();
+        showError(errorData.message || 'Eroare la încărcarea imaginii');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      showError('Eroare la încărcarea imaginii');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleDeleteImage = async () => {
+    if (!cvImageUrl) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/cv/delete-image`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        setCvImageUrl(null);
+        showSuccess('Imagine CV ștearsă cu succes!');
+      } else {
+        const errorData = await response.json();
+        showError(errorData.message || 'Eroare la ștergerea imaginii');
+      }
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      showError('Eroare la ștergerea imaginii');
+    }
+  };
+
   useEffect(() => {
     // Load CV data if user has completed CV and we haven't loaded it yet
     if (user?.hasCompletedCv && !hasLoadedCV.current && !isLoadingCV) {
@@ -151,6 +224,11 @@ export default function Profile() {
       if (response.ok) {
         const data = await response.json();
         setCvData(data.data.cv);
+        
+        // Load CV image URL from user data
+        if (data.data.user?.cvImageUrl) {
+          setCvImageUrl(data.data.user.cvImageUrl);
+        }
         
         // Pre-populate form with existing data
         if (data.data.cv) {
@@ -425,6 +503,68 @@ export default function Profile() {
                 <User className="w-5 h-5 text-blue-600" />
                 Informații personale
               </h2>
+              
+              {/* CV Image Upload */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Poza CV
+                </label>
+                <div className="flex items-center gap-4">
+                  {cvImageUrl ? (
+                    <div className="relative">
+                      <img
+                        src={`${API_BASE_URL.replace('/api', '')}${cvImageUrl}`}
+                        alt="CV"
+                        className="w-24 h-24 rounded-lg object-cover border"
+                        onError={(e) => {
+                          console.error('Error loading CV image:', e);
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                      {isEditing && (
+                        <button
+                          onClick={handleDeleteImage}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                          title="Șterge imaginea"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
+                      <User className="w-8 h-8 text-gray-400" />
+                    </div>
+                  )}
+                  
+                  {isEditing && (
+                    <div className="flex flex-col gap-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploadingImage}
+                        className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        {isUploadingImage ? 'Se încarcă...' : cvImageUrl ? 'Schimbă imaginea' : 'Adaugă imagine'}
+                      </button>
+                      {cvImageUrl && (
+                        <button
+                          onClick={handleDeleteImage}
+                          className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                        >
+                          Șterge imaginea
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
               
               {isEditing ? (
                 <div className="space-y-4">

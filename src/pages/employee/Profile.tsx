@@ -163,6 +163,7 @@ export default function Profile() {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Upload response:', data);
         setCvImageUrl(data.data.imageUrl);
         showSuccess('Imagine CV încărcată cu succes!');
       } else {
@@ -209,7 +210,7 @@ export default function Profile() {
     
     // Debug logging for CV image
     if (cvImageUrl) {
-      console.log('CV Image URL:', `${API_BASE_URL.replace('/api', '')}${cvImageUrl}`);
+      console.log('CV Image URL:', `http://localhost:5001${cvImageUrl}`);
     }
   }, [user, cvImageUrl]);
 
@@ -522,7 +523,7 @@ export default function Profile() {
                   {cvImageUrl ? (
                     <div className="relative">
                       <img
-                        src={`${API_BASE_URL.replace('/api', '')}${cvImageUrl}`}
+                        src={`http://localhost:5001${cvImageUrl}`}
                         alt="CV"
                         className="w-24 h-24 rounded-lg object-cover border"
                         onError={(e) => {

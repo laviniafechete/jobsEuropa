@@ -66,7 +66,7 @@ export default function Footer() {
           <a href="/data-deletion" className="hover:underline">Ștergere Date</a>
         </div>
       </div>
-      <span className="text-xs text-gray-400 text-center md:text-right">
+      <span className="text-xs text-gray-400 text-center md:text-right mt-4">
         &copy; {new Date().getFullYear()} Jobs Europa. Toate drepturile
         rezervate.
       </span>

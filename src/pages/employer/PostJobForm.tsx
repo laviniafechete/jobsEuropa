@@ -46,9 +46,17 @@ export default function PostJobForm() {
         if (response.ok) {
           const data = await response.json();
           console.log('Fetched jobs:', data.data.jobs);
+          console.log('Jobs structure:', data.data.jobs?.map((job: any) => ({
+            _id: job._id,
+            id: job.id,
+            title: job.title,
+            type: job.type
+          })));
           setJobAds(data.data.jobs || []);
         }
-      } catch (e) { /* ignore */ }
+      } catch (e) { 
+        console.error('Error fetching jobs:', e);
+      }
     };
     fetchJobs();
   }, [token]);
@@ -410,8 +418,11 @@ export default function PostJobForm() {
           {jobAds.slice().reverse().map((ad: any) => (
             <JobAdCard key={ad._id || ad.id} ad={ad} onEdit={() => {
               console.log('Edit clicked for job:', ad);
-              console.log('Job ID:', ad._id || ad.id);
-              setEditAd(ad._id || ad.id);
+              console.log('Job _id:', ad._id);
+              console.log('Job id:', ad.id);
+              const jobId = ad._id || ad.id;
+              console.log('Setting editAd to:', jobId);
+              setEditAd(jobId);
             }} onPromote={() => handlePromoteJob(ad._id || ad.id)} />
           ))}
         </div>
@@ -420,6 +431,12 @@ export default function PostJobForm() {
         ad={(() => {
           console.log('All jobAds:', jobAds);
           console.log('editAd value:', editAd);
+          
+          if (!editAd || jobAds.length === 0) {
+            console.log('No editAd or no jobAds available');
+            return undefined;
+          }
+          
           const foundAd = jobAds.find((a: any) => {
             console.log('Checking job:', a);
             console.log('Job _id:', a._id);
@@ -430,6 +447,12 @@ export default function PostJobForm() {
             console.log('Job ID matches editAd:', matches);
             return matches;
           });
+          
+          if (!foundAd) {
+            console.log('No job found with ID:', editAd);
+            console.log('Available job IDs:', jobAds.map((a: any) => a._id || a.id));
+          }
+          
           console.log('Found ad for edit:', foundAd);
           return foundAd;
         })()}

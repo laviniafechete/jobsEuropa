@@ -338,14 +338,14 @@ export default function PostJobForm() {
           value={experience}
           onChange={e => setExperience(e.target.value)}
         >
-          <option value="entry">Entry</option>
-          <option value="junior">Junior</option>
-          <option value="mid">Mid</option>
-          <option value="senior">Senior</option>
-          <option value="lead">Lead</option>
+          <option value="entry">Fără experiență</option>
+          <option value="junior">1–2 ani experiență într-un rol similar</option>
+          <option value="mid">Minim 3 ani experiență în domeniu</option>
+          <option value="senior">Experiență medie (2–5 ani)</option>
+          <option value="lead">Experiență avansată (&gt;5 ani)</option>
         </select>
         <div>
-          <label className="block font-medium mb-1">Skills</label>
+          <label className="block font-medium mb-1">Competențe</label>
           <div className="flex gap-2 mb-2">
             <input
               type="text"

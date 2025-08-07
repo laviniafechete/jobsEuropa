@@ -45,7 +45,7 @@ type EmployerContextType = {
   logout: (cb?: () => void) => void;
   updateCompany: (company: Company) => void;
   addJobAd: (ad: Omit<JobAd, "id">) => Promise<any>;
-  updateJobAd: (ad: JobAd) => void;
+  updateJobAd: (ad: JobAd) => Promise<any>;
 };
 
 const EmployerContext = createContext<EmployerContextType | undefined>(
@@ -186,13 +186,66 @@ export function EmployerProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateJobAd = (ad: JobAd) => {
-    setEmployer((e) => {
-      if (!e) return e;
-      const newJobAds = (e.jobAds || []).map((j) => (j.id === ad.id ? ad : j));
-      localStorage.setItem("jobAds", JSON.stringify(newJobAds));
-      return { ...e, jobAds: newJobAds };
-    });
+  const updateJobAd = async (ad: JobAd) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Nu ești autentificat");
+      }
+
+      // Map frontend fields to backend fields
+      const jobData = {
+        title: ad.title,
+        description: ad.requirements,
+        location: ad.location,
+        type: ad.type.toLowerCase().replace('-', ''),
+        category: ad.domain,
+        salary: ad.salary,
+        experience: 'entry',
+        skills: [],
+        benefits: []
+      };
+
+      const response = await fetch(`${API_BASE_URL}/jobs/${ad.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(jobData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'Eroare la actualizarea job-ului');
+      }
+
+      const result = await response.json();
+      
+      // Update local state with the updated job from backend
+      setEmployer((e) => {
+        if (!e) return e;
+        const newJobAds = (e.jobAds || []).map((j) => 
+          j.id === ad.id ? {
+            id: result.data._id,
+            title: result.data.title,
+            requirements: result.data.description,
+            location: result.data.location,
+            type: result.data.type,
+            salary: result.data.salary?.min ? `${result.data.salary.min} RON` : '',
+            domain: result.data.category,
+            image: ad.image
+          } : j
+        );
+        localStorage.setItem("jobAds", JSON.stringify(newJobAds));
+        return { ...e, jobAds: newJobAds };
+      });
+
+      return result.data;
+    } catch (error) {
+      console.error('Error updating job ad:', error);
+      throw error;
+    }
   };
 
   return (

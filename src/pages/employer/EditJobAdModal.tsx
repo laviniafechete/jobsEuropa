@@ -21,6 +21,8 @@ export default function EditJobAdModal({ ad, open, onClose }: Props) {
     image: "",
   });
   const [imgPreview, setImgPreview] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (ad) {
@@ -29,7 +31,7 @@ export default function EditJobAdModal({ ad, open, onClose }: Props) {
         requirements: ad.requirements,
         location: ad.location,
         type: ad.type,
-        salary: ad.salary,
+        salary: typeof ad.salary === 'string' ? ad.salary : `${ad.salary.min || ''} RON`,
         domain: ad.domain,
         image: ad.image || "",
       });
@@ -47,10 +49,19 @@ export default function EditJobAdModal({ ad, open, onClose }: Props) {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateJobAd({ ...form, id: ad.id });
-    onClose();
+    setIsSubmitting(true);
+    setError(null);
+    
+    try {
+      await updateJobAd({ ...form, id: ad.id });
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Eroare la actualizarea job-ului');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -66,6 +77,11 @@ export default function EditJobAdModal({ ad, open, onClose }: Props) {
         <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
           <Briefcase className="text-green-600" /> Editează anunțul
         </h2>
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <input
             name="title"
@@ -130,9 +146,10 @@ export default function EditJobAdModal({ ad, open, onClose }: Props) {
           )}
           <button
             type="submit"
-            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg transition"
+            disabled={isSubmitting}
+            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg transition disabled:opacity-50"
           >
-            Salvează modificările
+            {isSubmitting ? "Se salvează..." : "Salvează modificările"}
           </button>
         </form>
       </div>

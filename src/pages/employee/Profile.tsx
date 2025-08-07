@@ -564,18 +564,20 @@ export default function Profile() {
                   {cvImageUrl ? (
                     <div className="relative">
                       <img
-                        src={`${getImageBaseUrl()}${cvImageUrl}`}
+                        src={cvImageUrl.startsWith('http') ? cvImageUrl : `${getImageBaseUrl()}${cvImageUrl.replace('/public/', '/')}`}
                         alt="CV"
                         className="w-24 h-24 rounded-lg object-cover border"
                         onError={(e) => {
                           console.error('=== IMAGE LOAD ERROR ===');
-                          console.error('Failed to load image:', `${getImageBaseUrl()}${cvImageUrl}`);
+                          console.error('Failed to load image:', cvImageUrl.startsWith('http') ? cvImageUrl : `${getImageBaseUrl()}${cvImageUrl.replace('/public/', '/')}`);
                           console.error('Error event:', e);
+                          console.error('cvImageUrl:', cvImageUrl);
+                          console.error('getImageBaseUrl():', getImageBaseUrl());
                           e.currentTarget.style.display = 'none';
                         }}
                         onLoad={() => {
                           console.log('=== IMAGE LOADED SUCCESSFULLY ===');
-                          console.log('Loaded image:', `${getImageBaseUrl()}${cvImageUrl}`);
+                          console.log('Loaded image:', cvImageUrl.startsWith('http') ? cvImageUrl : `${getImageBaseUrl()}${cvImageUrl.replace('/public/', '/')}`);
                         }}
                       />
                       {isEditing && (

@@ -452,6 +452,8 @@ export default function EmployerProfile() {
                     onError={(e) => {
                       console.error('Header logo load error:', e);
                       console.log('Header logo URL attempted:', companyData.logoUrl.startsWith('http') ? companyData.logoUrl : `${API_BASE_URL.replace('/api', '')}${companyData.logoUrl}`);
+                      console.log('API_BASE_URL:', API_BASE_URL);
+                      console.log('logoUrl:', companyData.logoUrl);
                     }}
                   />
                 ) : (
@@ -563,6 +565,8 @@ export default function EmployerProfile() {
                           onError={(e) => {
                             console.error('Logo load error:', e);
                             console.log('Logo URL attempted:', logoPreview || (companyData?.logoUrl.startsWith('http') ? companyData.logoUrl : `${API_BASE_URL.replace('/api', '')}${companyData?.logoUrl}`));
+                            console.log('API_BASE_URL:', API_BASE_URL);
+                            console.log('companyData.logoUrl:', companyData?.logoUrl);
                           }}
                         />
                       ) : (

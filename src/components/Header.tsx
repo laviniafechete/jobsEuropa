@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 import logo from "../assets/logo.png";
-import { Menu, X, LogOut, User, AlertTriangle, Briefcase } from "lucide-react";
+import { Menu, X, LogOut, User, AlertTriangle, Briefcase, Building2 } from "lucide-react";
+import { API_BASE_URL } from "../config/env";
 
 export default function Header() {
   const navigate = useNavigate();
@@ -217,8 +218,24 @@ export default function Header() {
                     }
                   }}
                 >
-                  <User className="w-4 h-4" />
-                  {user?.name || employer?.companyName || "Profil"}
+                  {userType === 'employer' && employer?.companyProfile?.logoUrl ? (
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={employer.companyProfile.logoUrl.startsWith('http') ? employer.companyProfile.logoUrl : `${API_BASE_URL.replace('/api', '')}${employer.companyProfile.logoUrl}`}
+                        alt="Logo companie"
+                        className="w-6 h-6 rounded-full object-cover"
+                        onError={(e) => {
+                          console.error('Header company logo load error:', e);
+                        }}
+                      />
+                      <span>{employer?.companyName || "Profil"}</span>
+                    </div>
+                  ) : (
+                    <>
+                      <User className="w-4 h-4" />
+                      {user?.name || employer?.companyName || "Profil"}
+                    </>
+                  )}
                 </button>
                 <button
                   className="flex items-center gap-1 text-gray-500 hover:text-red-500 font-medium transition text-base"

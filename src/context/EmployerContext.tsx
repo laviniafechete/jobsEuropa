@@ -193,6 +193,15 @@ export function EmployerProvider({ children }: { children: React.ReactNode }) {
         throw new Error("Nu ești autentificat");
       }
 
+      // Parse salary if it's a string
+      let salaryData = ad.salary;
+      if (typeof ad.salary === 'string') {
+        const salaryMatch = ad.salary.match(/(\d+)\s*RON/);
+        if (salaryMatch) {
+          salaryData = { min: parseInt(salaryMatch[1]), currency: 'RON' };
+        }
+      }
+
       // Map frontend fields to backend fields
       const jobData = {
         title: ad.title,
@@ -200,11 +209,13 @@ export function EmployerProvider({ children }: { children: React.ReactNode }) {
         location: ad.location,
         type: ad.type.toLowerCase().replace('-', ''),
         category: ad.domain,
-        salary: ad.salary,
-        experience: 'entry',
-        skills: [],
-        benefits: []
+        salary: salaryData,
+        experience: ad.experience || 'entry',
+        skills: ad.skills || [],
+        benefits: ad.benefits || []
       };
+
+      console.log('Updating job with data:', jobData);
 
       const response = await fetch(`${API_BASE_URL}/jobs/${ad.id}`, {
         method: 'PUT',
@@ -215,12 +226,16 @@ export function EmployerProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify(jobData)
       });
 
+      console.log('Update response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('Update error response:', errorData);
         throw new Error(errorData.error?.message || 'Eroare la actualizarea job-ului');
       }
 
       const result = await response.json();
+      console.log('Update success response:', result);
       
       // Update local state with the updated job from backend
       setEmployer((e) => {

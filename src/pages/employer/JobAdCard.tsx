@@ -64,7 +64,7 @@ export default function JobAdCard({
         <div className="text-gray-700 text-sm mb-2">{ad.requirements || ad.description}</div>
         {ad.skills && ad.skills.length > 0 && (
           <div className="mb-1 text-xs text-gray-600">
-            <b>Skills:</b> {ad.skills.join(", ")}
+            <b>Competențe:</b> {ad.skills.join(", ")}
           </div>
         )}
         {ad.benefits && ad.benefits.length > 0 && (

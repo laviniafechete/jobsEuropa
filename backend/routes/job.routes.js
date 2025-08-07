@@ -182,7 +182,7 @@ router.post('/', protectEmployer, checkEmployerSubscription, rateLimit(10, 60 * 
   }
 
   if (skills) {
-    validateArray(skills, 'Skills', 0, 20);
+    validateArray(skills, 'Competențe', 0, 20);
   }
 
   if (benefits) {
@@ -275,7 +275,7 @@ router.put('/:id', protectEmployer, asyncHandler(async (req, res) => {
   }
 
   if (skills !== undefined) {
-    validateArray(skills, 'Skills', 0, 20);
+    validateArray(skills, 'Competențe', 0, 20);
     job.skills = skills.map(s => sanitizeInput(s));
   }
 

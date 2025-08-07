@@ -414,7 +414,7 @@ export default function JobList() {
               )}
               {selectedJob.skills && selectedJob.skills.length > 0 && (
                 <div className="mb-2 text-gray-700">
-                  <b>Skills:</b>
+                  <b>Competențe:</b>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {selectedJob.skills.map((s: string, i: number) => (
                       <span key={i} className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">{s}</span>

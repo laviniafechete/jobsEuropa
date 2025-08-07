@@ -23,20 +23,42 @@ export default function EditJobAdModal({ ad, open, onClose }: Props) {
   const [imgPreview, setImgPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [skills, setSkills] = useState<string[]>([]);
+  const [skillInput, setSkillInput] = useState("");
+  const [benefits, setBenefits] = useState<string[]>([]);
+  const [benefitInput, setBenefitInput] = useState("");
+  const [experience, setExperience] = useState("entry");
 
   useEffect(() => {
     console.log('EditJobAdModal received ad:', ad);
     if (ad) {
+      // Parse salary correctly
+      let salaryDisplay = '';
+      if (typeof ad.salary === 'string') {
+        salaryDisplay = ad.salary;
+      } else if (ad.salary && typeof ad.salary === 'object') {
+        if (ad.salary.min && ad.salary.max) {
+          salaryDisplay = `${ad.salary.min}-${ad.salary.max} ${ad.salary.currency || 'RON'}`;
+        } else if (ad.salary.min) {
+          salaryDisplay = `${ad.salary.min} ${ad.salary.currency || 'RON'}`;
+        } else if (ad.salary.max) {
+          salaryDisplay = `până la ${ad.salary.max} ${ad.salary.currency || 'RON'}`;
+        }
+      }
+
       setForm({
-        title: ad.title,
+        title: ad.title || "",
         requirements: ad.requirements || ad.description || "",
-        location: ad.location,
-        type: ad.type,
-        salary: typeof ad.salary === 'string' ? ad.salary : `${ad.salary.min || ''} RON`,
+        location: ad.location || "",
+        type: ad.type || "",
+        salary: salaryDisplay,
         domain: ad.domain || ad.category || "",
         image: ad.image || "",
       });
       setImgPreview(ad.image || null);
+      setSkills(ad.skills || []);
+      setBenefits(ad.benefits || []);
+      setExperience(ad.experience || "entry");
     }
   }, [ad]);
 
@@ -50,13 +72,35 @@ export default function EditJobAdModal({ ad, open, onClose }: Props) {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // Handlers for skills and benefits
+  const handleSkillAdd = () => {
+    if (skillInput.trim() && !skills.includes(skillInput.trim())) {
+      setSkills([...skills, skillInput.trim()]);
+      setSkillInput("");
+    }
+  };
+  const handleSkillRemove = (s: string) => setSkills(skills.filter(x => x !== s));
+  const handleBenefitAdd = () => {
+    if (benefitInput.trim() && !benefits.includes(benefitInput.trim())) {
+      setBenefits([...benefits, benefitInput.trim()]);
+      setBenefitInput("");
+    }
+  };
+  const handleBenefitRemove = (b: string) => setBenefits(benefits.filter(x => x !== b));
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
     
     try {
-      await updateJobAd({ ...form, id: ad.id });
+      await updateJobAd({ 
+        ...form, 
+        id: ad.id,
+        skills,
+        benefits,
+        experience
+      });
       onClose();
     } catch (err: any) {
       setError(err.message || 'Eroare la actualizarea job-ului');
@@ -138,6 +182,59 @@ export default function EditJobAdModal({ ad, open, onClose }: Props) {
             onChange={handleChange}
             required
           />
+          <select
+            className="border rounded-lg px-3 py-2 w-full text-base focus:ring-2 focus:ring-green-500"
+            value={experience}
+            onChange={e => setExperience(e.target.value)}
+          >
+            <option value="entry">Fără experiență</option>
+            <option value="junior">1–2 ani experiență într-un rol similar</option>
+            <option value="mid">Minim 3 ani experiență în domeniu</option>
+            <option value="senior">Experiență medie (2–5 ani)</option>
+            <option value="lead">Experiență avansată (&gt;5 ani)</option>
+          </select>
+          <div>
+            <label className="block font-medium mb-1">Competențe</label>
+            <div className="flex gap-2 mb-2">
+              <input
+                type="text"
+                className="border rounded-lg px-4 py-2 flex-1"
+                placeholder="Adaugă competență"
+                value={skillInput}
+                onChange={e => setSkillInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleSkillAdd(); } }}
+              />
+              <button type="button" onClick={handleSkillAdd} className="bg-green-500 text-white px-3 py-1 rounded">Adaugă</button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {skills.map(s => (
+                <span key={s} className="bg-green-200 text-green-800 px-2 py-1 rounded text-xs flex items-center gap-1">
+                  {s} <button type="button" onClick={() => handleSkillRemove(s)} className="ml-1 text-red-500">×</button>
+                </span>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block font-medium mb-1">Beneficii</label>
+            <div className="flex gap-2 mb-2">
+              <input
+                type="text"
+                className="border rounded-lg px-4 py-2 flex-1"
+                placeholder="Adaugă beneficiu"
+                value={benefitInput}
+                onChange={e => setBenefitInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleBenefitAdd(); } }}
+              />
+              <button type="button" onClick={handleBenefitAdd} className="bg-green-500 text-white px-3 py-1 rounded">Adaugă</button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {benefits.map(b => (
+                <span key={b} className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs flex items-center gap-1">
+                  {b} <button type="button" onClick={() => handleBenefitRemove(b)} className="ml-1 text-red-500">×</button>
+                </span>
+              ))}
+            </div>
+          </div>
           {imgPreview && (
             <img
               src={imgPreview}

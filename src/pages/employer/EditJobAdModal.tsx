@@ -101,11 +101,18 @@ export default function EditJobAdModal({ ad, open, onClose }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('=== HANDLE SUBMIT START ===');
+    console.log('Ad object:', ad);
+    console.log('Ad ID:', ad?.id);
     console.log('Form data:', form);
     console.log('Skills:', skills);
     console.log('Benefits:', benefits);
     console.log('Experience:', experience);
     console.log('Token from useAuthStore:', token ? 'exists' : 'missing');
+    
+    if (!ad?.id) {
+      setError('ID-ul job-ului nu a fost găsit');
+      return;
+    }
     
     setIsSubmitting(true);
     setError(null);

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { API_BASE_URL } from "../config/env";
+import { useAuthStore } from "../stores/authStore";
 
 export type JobAd = {
   id: string;
@@ -58,6 +59,7 @@ function generateId() {
 
 export function EmployerProvider({ children }: { children: React.ReactNode }) {
   const [employer, setEmployer] = useState<Employer | null>(null);
+  const { token } = useAuthStore();
 
   // Persistent login on refresh if token and employerId exist
   useEffect(() => {
@@ -190,16 +192,7 @@ export function EmployerProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('=== UPDATE JOB AD START ===');
       console.log('Job ad to update:', ad);
-      
-      // Try to get token from multiple sources
-      let token = localStorage.getItem("token");
-      console.log('Token from localStorage:', token ? 'exists' : 'missing');
-      
-      // If no token in localStorage, try to get from sessionStorage
-      if (!token) {
-        token = sessionStorage.getItem("token");
-        console.log('Token from sessionStorage:', token ? 'exists' : 'missing');
-      }
+      console.log('Token from useAuthStore:', token ? 'exists' : 'missing');
       
       if (!token) {
         throw new Error("Nu ești autentificat");
@@ -236,6 +229,7 @@ export function EmployerProvider({ children }: { children: React.ReactNode }) {
       };
 
       console.log('Updating job with data:', jobData);
+      console.log('Job ID for update:', ad.id);
 
       const response = await fetch(`${API_BASE_URL}/jobs/${ad.id}`, {
         method: 'PUT',

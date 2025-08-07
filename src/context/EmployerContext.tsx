@@ -201,9 +201,31 @@ export function EmployerProvider({ children }: { children: React.ReactNode }) {
       // Parse salary if it's a string
       let salaryData = ad.salary;
       if (typeof ad.salary === 'string') {
-        const salaryMatch = ad.salary.match(/(\d+)\s*RON/);
-        if (salaryMatch) {
-          salaryData = { min: parseInt(salaryMatch[1]), currency: 'RON' };
+        console.log('Parsing salary string:', ad.salary);
+        
+        // Pattern pentru "2000-4000 EUR" sau "2000-4000 RON"
+        const rangeMatch = ad.salary.match(/(\d+)\s*-\s*(\d+)\s*(EUR|RON)/);
+        if (rangeMatch) {
+          salaryData = { 
+            min: parseInt(rangeMatch[1]), 
+            max: parseInt(rangeMatch[2]), 
+            currency: rangeMatch[3] 
+          };
+          console.log('Parsed range salary:', salaryData);
+        } else {
+          // Pattern pentru "2000 EUR" sau "2000 RON"
+          const singleMatch = ad.salary.match(/(\d+)\s*(EUR|RON)/);
+          if (singleMatch) {
+            salaryData = { 
+              min: parseInt(singleMatch[1]), 
+              currency: singleMatch[2] 
+            };
+            console.log('Parsed single salary:', salaryData);
+          } else {
+            // Fallback - trimite ca string dacă nu se poate parsa
+            console.log('Could not parse salary, sending as string');
+            salaryData = ad.salary;
+          }
         }
       }
 

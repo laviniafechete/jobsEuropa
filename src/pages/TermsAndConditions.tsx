@@ -150,7 +150,7 @@ export default function TermsAndConditions() {
                 <li>Contactarea directă a angajatorilor</li>
                 <li>Salvarea preferințelor și istoricului</li>
                 <li>Notificări despre joburi noi</li>
-                <li>Autentificare prin Google/Facebook</li>
+                <li>Autentificare prin Google</li>
               </ul>
             </div>
             

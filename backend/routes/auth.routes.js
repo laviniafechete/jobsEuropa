@@ -36,13 +36,7 @@ router.get('/google/callback', passport.authenticate('google', { session: false 
   res.redirect(`${config.frontendUrl}/employee/oauth-success?token=${token}&provider=Google`);
 });
 
-// Facebook OAuth
-router.get('/facebook', passport.authenticate('facebook', { scope: ['email'] }));
-router.get('/facebook/callback', passport.authenticate('facebook', { session: false }), (req, res) => {
-  const user = req.user;
-  const token = jwt.sign({ userId: user.userId, userType: 'user' }, config.jwtSecret, { expiresIn: config.jwtExpiresIn });
-  res.redirect(`${config.frontendUrl}/employee/oauth-success?token=${token}&provider=Facebook`);
-});
+
 
 // Protected routes
 router.get("/me", authMiddleware, getUserInfo);

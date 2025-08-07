@@ -10,7 +10,6 @@ import { rateLimit } from "./middlewares/authMiddleware.js";
 import passport from 'passport';
 import session from 'express-session';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { Strategy as FacebookStrategy } from 'passport-facebook';
 import User from './models/User.js';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -85,30 +84,7 @@ passport.use(new GoogleStrategy({
   }
 }));
 
-// Facebook OAuth Strategy
-passport.use(new FacebookStrategy({
-  clientID: config.facebookClientID,
-  clientSecret: config.facebookClientSecret,
-  callbackURL: config.facebookCallbackURL,
-  profileFields: ['id', 'displayName', 'emails']
-}, async (accessToken, refreshToken, profile, done) => {
-  try {
-    let email = profile.emails && profile.emails[0] && profile.emails[0].value;
-    if (!email) return done(new Error('No email from Facebook'), null);
-    let user = await User.findOne({ email });
-    if (!user) {
-      user = await User.create({
-        name: profile.displayName,
-        email,
-        password: Math.random().toString(36).slice(-8),
-        emailVerified: true
-      });
-    }
-    return done(null, user);
-  } catch (err) {
-    return done(err, null);
-  }
-}));
+
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));

@@ -6,7 +6,6 @@ export const developmentConfig = {
   
   // OAuth URLs
   GOOGLE_OAUTH_URL: 'http://localhost:5001/api/auth/google',
-  FACEBOOK_OAUTH_URL: 'http://localhost:5001/api/auth/facebook',
   
   // Contact Information
   CONTACT_PHONE: '+40757758647',

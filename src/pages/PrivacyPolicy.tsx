@@ -40,7 +40,7 @@ export default function PrivacyPolicy() {
             <li><strong>Domenii de interes:</strong> maximum 3 domenii selectate din 20 disponibile</li>
             <li><strong>Preferințe profesionale:</strong> disponibilitate, așteptări salariale, disponibilitate relocare</li>
             <li><strong>Documente:</strong> permis de conducere, pașaport/carte de identitate (doar confirmarea existenței)</li>
-            <li><strong>Date de autentificare:</strong> parolă criptată, token-uri de sesiune, date OAuth (Google, Facebook)</li>
+            <li><strong>Date de autentificare:</strong> parolă criptată, token-uri de sesiune, date OAuth (Google)</li>
             <li><strong>Istoricul aplicărilor:</strong> joburile la care ați aplicat, data aplicării, statusul aplicării</li>
           </ul>
 
@@ -120,7 +120,7 @@ export default function PrivacyPolicy() {
           <ul className="list-disc ml-6 mb-4 space-y-2">
             <li><strong>Stripe Inc.</strong> - procesarea plăților pentru abonamente angajatori (Irlanda, SUA - cu acorduri de transfer adecvate)</li>
             <li><strong>Google LLC</strong> - autentificare OAuth și servicii de hosting (SUA - cu acorduri de transfer adecvate)</li>
-            <li><strong>Meta Platforms</strong> - autentificare Facebook (SUA - cu acorduri de transfer adecvate)</li>
+
             <li><strong>Furnizori servicii email</strong> - pentru trimiterea notificărilor și comunicărilor</li>
             <li><strong>Furnizori servicii SMS</strong> - pentru verificarea numerelor de telefon și notificări</li>
             <li><strong>Servicii de hosting și cloud</strong> - pentru stocarea și procesarea datelor</li>
@@ -226,7 +226,7 @@ export default function PrivacyPolicy() {
           <h2 className="text-2xl font-semibold mb-4 text-gray-900">7. Transferuri Internaționale de Date</h2>
           <p className="mb-4">
             Unele dintre datele dumneavoastră pot fi transferate și procesate în afara Spațiului Economic European (SEE) 
-            de către partenerii noștri (Google, Facebook, Stripe). Aceste transferuri se bazează pe:
+            de către partenerii noștri (Google, Stripe). Aceste transferuri se bazează pe:
           </p>
           <ul className="list-disc ml-6 mb-4 space-y-1">
             <li>Decizii de adecvare ale Comisiei Europene</li>

@@ -11,7 +11,7 @@ export const urlMap = {
   'http://localhost:5001/api/auth/verify-phone-registration': () => getApiUrl('/auth/verify-phone-registration'),
   'http://localhost:5001/api/auth/verify-sms': () => getApiUrl('/auth/verify-sms'),
   'http://localhost:5001/api/auth/google': () => getApiUrl('/auth/google'),
-  'http://localhost:5001/api/auth/facebook': () => getApiUrl('/auth/facebook'),
+
   
   // User endpoints
   'http://localhost:5001/api/users/me': () => getApiUrl('/users/me'),

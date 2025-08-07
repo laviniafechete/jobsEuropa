@@ -4,8 +4,7 @@ import { useAuthStore } from "../../stores/authStore";
 import { useSnackbar } from "../../hooks/useSnackbar";
 import { Eye, EyeOff, Mail, Phone, ArrowLeft } from "lucide-react";
 import PhoneInput from '../../components/PhoneInput';
-import { getApiUrl, GOOGLE_OAUTH_URL, FACEBOOK_OAUTH_URL } from '../../config/env';
-import FacebookIcon from '../../assets/tiktok.png'; // Poți schimba cu icon Facebook
+import { getApiUrl, GOOGLE_OAUTH_URL } from '../../config/env';
 import { useEffect } from 'react';
 
 export default function Login() {
@@ -163,11 +162,8 @@ export default function Login() {
   };
 
   // OAuth login handler
-  const handleOAuthLogin = (provider: 'google' | 'facebook') => {
-    window.location.href =
-      provider === 'google'
-        ? GOOGLE_OAUTH_URL
-        : FACEBOOK_OAUTH_URL;
+  const handleOAuthLogin = (provider: 'google') => {
+    window.location.href = GOOGLE_OAUTH_URL;
   };
 
   // Prevent redirect to home if on reset-password page
@@ -372,14 +368,6 @@ export default function Login() {
                 </svg>
               </span>
               Continuă cu Google
-            </button>
-            <button
-              type="button"
-              onClick={() => handleOAuthLogin('facebook')}
-              className="flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2 px-4 hover:bg-gray-100 transition"
-            >
-              <img src={FacebookIcon} alt="Facebook" className="w-6 h-6" />
-              Continuă cu Facebook
             </button>
           </div>
         </div>

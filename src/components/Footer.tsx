@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Facebook, Instagram, Mail } from "lucide-react";
+import { Instagram, Mail } from "lucide-react";
 import tiktok from "../assets/tiktok.png";
 
 export default function Footer() {
@@ -15,15 +15,7 @@ export default function Footer() {
           >
             <Mail className="w-6 h-6" />
           </a>
-          <a
-            href="https://www.facebook.com/profile.php?id=61578134311366&mibextid=wwXIfr&rdid=Evl45eh9Ao7q29b5&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F16r65CRUqQ%2F%3Fmibextid%3DwwXIfr#"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gray-500 hover:text-blue-600"
-            aria-label="Facebook"
-          >
-            <Facebook className="w-6 h-6" />
-          </a>
+
           <a
             href="https://www.instagram.com/joburieu?igsh=NmxtN3NpN2dpMGlh&utm_source=qr"
             target="_blank"

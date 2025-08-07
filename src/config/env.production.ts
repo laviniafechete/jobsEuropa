@@ -6,7 +6,6 @@ export const productionConfig = {
   
   // OAuth URLs
   GOOGLE_OAUTH_URL: 'https://www.jobs-europa.com/api/auth/google',
-  FACEBOOK_OAUTH_URL: 'https://www.jobs-europa.com/api/auth/facebook',
   
   // Contact Information
   CONTACT_PHONE: '+40757758647',

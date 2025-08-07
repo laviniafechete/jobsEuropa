@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Building2, Upload } from "lucide-react";
+import { Building2 } from "lucide-react";
 import { useAuthStore } from "../../stores/authStore";
 import { useSnackbar } from "../../hooks/useSnackbar";
 import { useNavigate } from "react-router-dom";
@@ -29,7 +29,6 @@ type Company = {
   location: string;
   domain: string;
   description: string;
-  logoUrl?: string;
   contactPerson?: string;
   position?: string;
   email?: string;
@@ -54,12 +53,8 @@ export default function CompanyForm({ onSuccess = () => {}, initialData, onSave 
       location: "",
       domain: "",
       description: "",
-      logoUrl: "",
       phone: { prefix: '+40', number: '' },
     }
-  );
-  const [logoPreview, setLogoPreview] = useState<string | null>(
-    initialData?.logoUrl || null
   );
   const [loading, setLoading] = useState(false);
 
@@ -73,7 +68,6 @@ export default function CompanyForm({ onSuccess = () => {}, initialData, onSave 
       .then(data => {
         if (data.success && data.data.companyProfile) {
           setForm({ ...form, ...data.data.companyProfile });
-          setLogoPreview(data.data.companyProfile.logoUrl || null);
         }
       })
       .catch(() => {})
@@ -84,7 +78,6 @@ export default function CompanyForm({ onSuccess = () => {}, initialData, onSave 
   useEffect(() => {
     if (initialData) {
       setForm(initialData);
-      setLogoPreview(initialData.logoUrl || null);
     }
   }, [initialData]);
 
@@ -94,86 +87,7 @@ export default function CompanyForm({ onSuccess = () => {}, initialData, onSave 
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      showError('Doar fișiere imagine sunt permise!');
-      return;
-    }
-
-    // Validate file size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      showError('Fișierul este prea mare. Dimensiunea maximă este 5MB.');
-      return;
-    }
-
-    // Show preview immediately
-    const url = URL.createObjectURL(file);
-    setLogoPreview(url);
-
-    // Upload to backend
-    try {
-      const formData = new FormData();
-      formData.append('logo', file);
-
-      const response = await fetch(`${API_BASE_URL}/employer/upload-logo`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        showError(errorData.error?.message || 'Eroare la încărcarea logo-ului');
-        // Remove preview on error
-        setLogoPreview(null);
-        return;
-      }
-
-      const data = await response.json();
-      showSuccess('Logo-ul a fost încărcat cu succes!');
-      
-      // Update form with the actual URL from backend
-      setForm(prev => ({
-        ...prev,
-        logoUrl: data.data.logoUrl
-      }));
-    } catch (error) {
-      showError('Eroare la încărcarea logo-ului');
-      // Remove preview on error
-      setLogoPreview(null);
-    }
-  };
-
-  const handleRemoveLogo = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/employer/delete-logo`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        showSuccess('Logo-ul a fost șters cu succes!');
-        setLogoPreview(null);
-        setForm(prev => ({
-          ...prev,
-          logoUrl: ''
-        }));
-      } else {
-        const errorData = await response.json();
-        showError(errorData.error?.message || 'Eroare la ștergerea logo-ului');
-      }
-    } catch (error) {
-      showError('Eroare la ștergerea logo-ului');
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -308,32 +222,7 @@ export default function CompanyForm({ onSuccess = () => {}, initialData, onSave 
           onChange={handleChange}
           required
         />
-        <label className="flex items-center gap-2 cursor-pointer">
-          <Upload className="text-green-600" />
-          <span>Logo companie (opțional)</span>
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleLogo}
-          />
-        </label>
-        {logoPreview && (
-          <div className="flex flex-col items-center gap-2">
-            <img
-              src={logoPreview}
-              alt="Preview"
-              className="w-24 h-24 rounded-full object-cover mx-auto border"
-            />
-            <button
-              type="button"
-              onClick={handleRemoveLogo}
-              className="text-red-600 hover:text-red-800 text-sm font-medium"
-            >
-              Șterge logo-ul
-            </button>
-          </div>
-        )}
+
         <button
           type="submit"
           className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg transition"

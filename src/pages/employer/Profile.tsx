@@ -14,8 +14,6 @@ import {
   MapPin,
   Globe,
   FileText,
-  Upload,
-  Trash2,
   AlertCircle
 } from "lucide-react";
 import PhoneInput from '../../components/PhoneInput';
@@ -26,7 +24,6 @@ interface FormData {
   location: string;
   domain: string;
   description: string;
-  logoUrl: string;
   contactPerson: string;
   position: string;
   email: string;
@@ -77,7 +74,6 @@ export default function EmployerProfile() {
     location: '',
     domain: '',
     description: '',
-    logoUrl: '',
     contactPerson: '',
     position: '',
     email: '',
@@ -85,8 +81,7 @@ export default function EmployerProfile() {
     website: ''
   });
 
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+
 
   useEffect(() => {
     // Load company data if employer has completed profile and we haven't loaded it yet
@@ -288,7 +283,7 @@ export default function EmployerProfile() {
         location: companyData.location || '',
         domain: companyData.domain || '',
         description: companyData.description || '',
-        logoUrl: companyData.logoUrl || '',
+
         contactPerson: companyData.contactPerson || '',
         position: companyData.position || '',
         email: companyData.email || '',
@@ -296,134 +291,10 @@ export default function EmployerProfile() {
         website: companyData.website || ''
       });
     }
-    setLogoPreview(null);
     setIsEditing(false);
   };
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
 
-    console.log('=== UPLOADING LOGO ===');
-    console.log('Selected file:', file.name, file.size, file.type);
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      showError('Doar fișiere imagine sunt permise!');
-      return;
-    }
-
-    // Validate file size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      showError('Fișierul este prea mare. Dimensiunea maximă este 5MB.');
-      return;
-    }
-
-    setIsUploadingLogo(true);
-
-    // Show preview immediately
-    const url = URL.createObjectURL(file);
-    setLogoPreview(url);
-
-    // Upload to backend
-    try {
-      const formData = new FormData();
-      formData.append('logo', file);
-
-      console.log('Sending upload request...');
-      const response = await fetch(`${API_BASE_URL}/employer/upload-logo`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      console.log('Upload response status:', response.status);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Upload error:', errorData);
-        if (errorData.error?.message?.includes("token")) {
-          showError("Sesiunea a expirat. Te rugăm să te loghezi din nou.");
-          navigate("/employer/login");
-          return;
-        }
-        showError(errorData.error?.message || 'Eroare la încărcarea logo-ului');
-        // Remove preview on error
-        setLogoPreview(null);
-        return;
-      }
-
-      const data = await response.json();
-      console.log('Upload success response:', data);
-      showSuccess('Logo-ul a fost încărcat cu succes!');
-      
-      // Update form with the actual URL from backend
-      setFormData(prev => {
-        const updated = {
-          ...prev,
-          logoUrl: data.data.logoUrl
-        };
-        console.log('Updated formData with logo:', updated);
-        return updated;
-      });
-
-      // Reset company loading flag to allow reload
-      hasLoadedCompany.current = false;
-      console.log('Reset hasLoadedCompany flag, reloading data...');
-      
-      // Reload company data to get updated logo
-      await loadCompanyData();
-    } catch (error) {
-      console.error('Upload error:', error);
-      showError('Eroare la încărcarea logo-ului');
-      // Remove preview on error
-      setLogoPreview(null);
-    } finally {
-      setIsUploadingLogo(false);
-    }
-  };
-
-  const handleRemoveLogo = async () => {
-    if (!confirm('Ești sigur că vrei să ștergi logo-ul companiei?')) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/employer/delete-logo`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        showSuccess('Logo-ul a fost șters cu succes!');
-        setLogoPreview(null);
-        setFormData(prev => ({
-          ...prev,
-          logoUrl: ''
-        }));
-        
-        // Reset company loading flag to allow reload
-        hasLoadedCompany.current = false;
-        
-        // Reload company data to get updated logo
-        await loadCompanyData();
-      } else {
-        const errorData = await response.json();
-        if (errorData.error?.message?.includes("token")) {
-          showError("Sesiunea a expirat. Te rugăm să te loghezi din nou.");
-          navigate("/employer/login");
-          return;
-        }
-        showError(errorData.error?.message || 'Eroare la ștergerea logo-ului');
-      }
-    } catch (error) {
-      showError('Eroare la ștergerea logo-ului');
-    }
-  };
 
   if (!employer) {
     return (
@@ -443,22 +314,8 @@ export default function EmployerProfile() {
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center overflow-hidden">
-                {companyData?.logoUrl ? (
-                  <img
-                    src={companyData.logoUrl.startsWith('http') ? companyData.logoUrl : `${API_BASE_URL.replace('/api', '')}${companyData.logoUrl}`}
-                    alt="Logo companie"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      console.error('Header logo load error:', e);
-                      console.log('Header logo URL attempted:', companyData.logoUrl.startsWith('http') ? companyData.logoUrl : `${API_BASE_URL.replace('/api', '')}${companyData.logoUrl}`);
-                      console.log('API_BASE_URL:', API_BASE_URL);
-                      console.log('logoUrl:', companyData.logoUrl);
-                    }}
-                  />
-                ) : (
-                  <Building2 className="w-8 h-8 text-green-600" />
-                )}
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <Building2 className="w-8 h-8 text-green-600" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">{employer.companyName}</h1>
@@ -554,50 +411,7 @@ export default function EmployerProfile() {
               
               {isEditing ? (
                 <div className="space-y-4">
-                  {/* Logo Upload */}
-                  <div className="flex items-center gap-4">
-                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center overflow-hidden">
-                      {(logoPreview || companyData?.logoUrl) ? (
-                        <img
-                          src={logoPreview || (companyData?.logoUrl.startsWith('http') ? companyData.logoUrl : `${API_BASE_URL.replace('/api', '')}${companyData?.logoUrl}`)}
-                          alt="Logo companie"
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            console.error('Logo load error:', e);
-                            console.log('Logo URL attempted:', logoPreview || (companyData?.logoUrl.startsWith('http') ? companyData.logoUrl : `${API_BASE_URL.replace('/api', '')}${companyData?.logoUrl}`));
-                            console.log('API_BASE_URL:', API_BASE_URL);
-                            console.log('companyData.logoUrl:', companyData?.logoUrl);
-                          }}
-                        />
-                      ) : (
-                        <Building2 className="w-8 h-8 text-green-600" />
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <label className="flex items-center gap-2 cursor-pointer text-sm text-green-600 hover:text-green-800">
-                        <Upload className="w-4 h-4" />
-                        {isUploadingLogo ? 'Se încarcă...' : 'Încarcă logo'}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleLogoUpload}
-                          disabled={isUploadingLogo}
-                        />
-                      </label>
-                      {(logoPreview || companyData?.logoUrl) && (
-                        <button
-                          type="button"
-                          onClick={handleRemoveLogo}
-                          className="flex items-center gap-2 text-sm text-red-600 hover:text-red-800"
-                          disabled={isUploadingLogo}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Șterge logo
-                        </button>
-                      )}
-                    </div>
-                  </div>
+
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>

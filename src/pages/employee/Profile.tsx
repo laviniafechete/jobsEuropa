@@ -104,9 +104,8 @@ export default function Profile() {
   const [cvData, setCvData] = useState<any>(null);
   const [isLoadingCV, setIsLoadingCV] = useState(false);
   const hasLoadedCV = useRef(false);
-  const [cvImageUrl, setCvImageUrl] = useState<string | null>(null);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
+
   
   const [formData, setFormData] = useState({
     experience: "",

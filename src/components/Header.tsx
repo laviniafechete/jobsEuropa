@@ -2,8 +2,7 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 import logo from "../assets/logo.png";
-import { Menu, X, LogOut, User, AlertTriangle, Briefcase, Building2 } from "lucide-react";
-import { API_BASE_URL } from "../config/env";
+import { Menu, X, LogOut, User, AlertTriangle, Briefcase } from "lucide-react";
 
 export default function Header() {
   const navigate = useNavigate();
@@ -15,15 +14,6 @@ export default function Header() {
 
   // Debug logging
   console.log("Header render - userType:", userType, "user:", user, "employer:", employer, "token:", token ? "exists" : "missing");
-  console.log("Header employer companyProfile:", employer?.companyProfile);
-  console.log("Header employer logoUrl:", employer?.companyProfile?.logoUrl);
-  console.log("API_BASE_URL:", API_BASE_URL);
-  if (employer?.companyProfile?.logoUrl) {
-    const logoUrl = employer.companyProfile.logoUrl.startsWith('http') ? employer.companyProfile.logoUrl : `${API_BASE_URL.replace('/api', '')}${employer.companyProfile.logoUrl}`;
-    console.log("Constructed logo URL:", logoUrl);
-    console.log("Original logoUrl:", employer.companyProfile.logoUrl);
-    console.log("API_BASE_URL.replace('/api', ''):", API_BASE_URL.replace('/api', ''));
-  }
 
   const handleLogoClick = () => {
     console.log("Logo clicked - userType:", userType);
@@ -227,25 +217,10 @@ export default function Header() {
                     }
                   }}
                 >
-                  {userType === 'employer' && employer?.companyProfile?.logoUrl ? (
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={employer.companyProfile.logoUrl.startsWith('http') ? employer.companyProfile.logoUrl : `${API_BASE_URL.replace('/api', '')}${employer.companyProfile.logoUrl}`}
-                        alt="Logo companie"
-                        className="w-6 h-6 rounded-full object-cover"
-                        onError={(e) => {
-                          console.error('Header company logo load error:', e);
-                          console.log('Header logo URL attempted:', employer.companyProfile.logoUrl.startsWith('http') ? employer.companyProfile.logoUrl : `${API_BASE_URL.replace('/api', '')}${employer.companyProfile.logoUrl}`);
-                        }}
-                      />
-                      <span>{employer?.companyName || "Profil"}</span>
-                    </div>
-                  ) : (
-                    <>
-                      <User className="w-4 h-4" />
-                      {user?.name || employer?.companyName || "Profil"}
-                    </>
-                  )}
+                                     <>
+                     <User className="w-4 h-4" />
+                     {user?.name || employer?.companyName || "Profil"}
+                   </>
                 </button>
                 <button
                   className="flex items-center gap-1 text-gray-500 hover:text-red-500 font-medium transition text-base"

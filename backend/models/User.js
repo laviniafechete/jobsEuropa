@@ -76,7 +76,7 @@ const userSchema = new mongoose.Schema(
     resetPasswordExpires: Date,
     smsVerificationCode: String,
     smsCodeExpiry: Date,
-    cvImageUrl: String
+
   },
   { 
     timestamps: true,

@@ -47,7 +47,6 @@ const employerSchema = new mongoose.Schema(
       location: { type: String, trim: true },
       domain: { type: String, trim: true },
       description: { type: String, maxlength: 2000 },
-      logoUrl: { type: String, trim: true },
       contactPerson: { type: String, trim: true },
       position: { type: String, trim: true },
       email: { type: String, trim: true },

@@ -162,28 +162,9 @@ const frontendBuildPath = path.join(__dirname, '..', 'dist');
 // Serve static files in both development and production
 app.use(express.static(frontendBuildPath));
 
-// Serve static files from public folder (for company logos, etc.)
-app.use('/public', express.static(path.join(__dirname, '..', 'public')));
-app.use('/companyLogos', express.static(path.join(__dirname, '..', 'public', 'companyLogos')));
-app.use('/cvImages', express.static(path.join(__dirname, '..', 'public', 'cvImages')));
 
-// Debug endpoint for static files
-app.get('/api/debug/static-files', (req, res) => {
-  const companyLogosPath = path.join(__dirname, '..', 'public', 'companyLogos');
-  const cvImagesPath = path.join(__dirname, '..', 'public', 'cvImages');
-  
-  res.json({
-    companyLogosPath,
-    companyLogosExists: fs.existsSync(companyLogosPath),
-    cvImagesPath,
-    cvImagesExists: fs.existsSync(cvImagesPath),
-    companyLogosFiles: fs.existsSync(companyLogosPath) ? fs.readdirSync(companyLogosPath) : [],
-    cvImagesFiles: fs.existsSync(cvImagesPath) ? fs.readdirSync(cvImagesPath) : [],
-    // Check specific file
-    specificLogoExists: fs.existsSync(path.join(companyLogosPath, '677e79f5-0824-4d2b-b7b5-8800e5602005.png')),
-    specificLogoPath: path.join(companyLogosPath, '677e79f5-0824-4d2b-b7b5-8800e5602005.png')
-  });
-});
+
+
 
 // Catch all handler: send back React's index.html file for client-side routing
 app.get('*', (req, res) => {
@@ -217,8 +198,6 @@ const connectDB = async () => {
 const ensureDirectories = () => {
   const directories = [
     '../public',
-    '../public/companyLogos',
-    '../public/cvImages',
     '../public/favicons'
   ];
   

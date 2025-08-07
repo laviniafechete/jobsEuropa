@@ -239,7 +239,7 @@ export default function EmployerProfile() {
         updateEmployer({ 
           ...employer, 
           hasProfileCompleted: true,
-          companyProfile: result.data
+          companyProfile: result.data.companyProfile
         });
       }
       

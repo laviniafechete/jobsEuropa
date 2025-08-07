@@ -15,6 +15,8 @@ export default function Header() {
 
   // Debug logging
   console.log("Header render - userType:", userType, "user:", user, "employer:", employer, "token:", token ? "exists" : "missing");
+  console.log("Header employer companyProfile:", employer?.companyProfile);
+  console.log("Header employer logoUrl:", employer?.companyProfile?.logoUrl);
 
   const handleLogoClick = () => {
     console.log("Logo clicked - userType:", userType);

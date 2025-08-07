@@ -178,7 +178,10 @@ app.get('/api/debug/static-files', (req, res) => {
     cvImagesPath,
     cvImagesExists: fs.existsSync(cvImagesPath),
     companyLogosFiles: fs.existsSync(companyLogosPath) ? fs.readdirSync(companyLogosPath) : [],
-    cvImagesFiles: fs.existsSync(cvImagesPath) ? fs.readdirSync(cvImagesPath) : []
+    cvImagesFiles: fs.existsSync(cvImagesPath) ? fs.readdirSync(cvImagesPath) : [],
+    // Check specific file
+    specificLogoExists: fs.existsSync(path.join(companyLogosPath, '677e79f5-0824-4d2b-b7b5-8800e5602005.png')),
+    specificLogoPath: path.join(companyLogosPath, '677e79f5-0824-4d2b-b7b5-8800e5602005.png')
   });
 });
 

@@ -21,6 +21,8 @@ export default function Header() {
   if (employer?.companyProfile?.logoUrl) {
     const logoUrl = employer.companyProfile.logoUrl.startsWith('http') ? employer.companyProfile.logoUrl : `${API_BASE_URL.replace('/api', '')}${employer.companyProfile.logoUrl}`;
     console.log("Constructed logo URL:", logoUrl);
+    console.log("Original logoUrl:", employer.companyProfile.logoUrl);
+    console.log("API_BASE_URL.replace('/api', ''):", API_BASE_URL.replace('/api', ''));
   }
 
   const handleLogoClick = () => {

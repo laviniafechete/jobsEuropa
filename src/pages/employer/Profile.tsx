@@ -446,12 +446,12 @@ export default function EmployerProfile() {
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center overflow-hidden">
                 {companyData?.logoUrl ? (
                   <img
-                    src={`${API_BASE_URL.replace('/api', '')}${companyData.logoUrl}`}
+                    src={companyData.logoUrl.startsWith('http') ? companyData.logoUrl : `${API_BASE_URL.replace('/api', '')}${companyData.logoUrl}`}
                     alt="Logo companie"
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       console.error('Header logo load error:', e);
-                      console.log('Header logo URL attempted:', `${API_BASE_URL.replace('/api', '')}${companyData.logoUrl}`);
+                      console.log('Header logo URL attempted:', companyData.logoUrl.startsWith('http') ? companyData.logoUrl : `${API_BASE_URL.replace('/api', '')}${companyData.logoUrl}`);
                     }}
                   />
                 ) : (
@@ -557,12 +557,12 @@ export default function EmployerProfile() {
                     <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center overflow-hidden">
                       {(logoPreview || companyData?.logoUrl) ? (
                         <img
-                          src={logoPreview || `${API_BASE_URL.replace('/api', '')}${companyData?.logoUrl}`}
+                          src={logoPreview || (companyData?.logoUrl.startsWith('http') ? companyData.logoUrl : `${API_BASE_URL.replace('/api', '')}${companyData?.logoUrl}`)}
                           alt="Logo companie"
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             console.error('Logo load error:', e);
-                            console.log('Logo URL attempted:', logoPreview || `${API_BASE_URL.replace('/api', '')}${companyData?.logoUrl}`);
+                            console.log('Logo URL attempted:', logoPreview || (companyData?.logoUrl.startsWith('http') ? companyData.logoUrl : `${API_BASE_URL.replace('/api', '')}${companyData?.logoUrl}`));
                           }}
                         />
                       ) : (
@@ -622,7 +622,7 @@ export default function EmployerProfile() {
                         required
                       />
                     </div>
-                    <div>
+                    <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Domeniul de activitate
                       </label>

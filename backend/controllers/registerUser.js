@@ -73,10 +73,10 @@ export const registerUser = asyncHandler(async (req, res) => {
       return sendError(res, "Numărul de telefon este obligatoriu", 400);
     }
 
-    // Validate phone format (Romanian)
-    const phoneRegex = /^(\+40|0)[0-9]{9}$/;
+    // Validate phone format (international)
+    const phoneRegex = /^\+[1-9]\d{1,14}$/;
     if (!phoneRegex.test(phone)) {
-      return sendError(res, "Format număr telefon invalid. Folosește un număr românesc valid.", 400);
+      return sendError(res, "Format număr telefon invalid. Folosește un număr internațional valid (ex: +40123456789).", 400);
     }
 
     // Check if phone already exists

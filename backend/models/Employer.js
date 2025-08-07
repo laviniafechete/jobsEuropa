@@ -14,13 +14,7 @@ const employerSchema = new mongoose.Schema(
     phone: { 
       type: String, 
       unique: true, 
-      sparse: true,
-      validate: {
-        validator: function(v) {
-          return /^(\+40|0)[0-9]{9}$/.test(v);
-        },
-        message: 'Phone number must be a valid Romanian number'
-      }
+      sparse: true
     },
     password: { 
       type: String, 

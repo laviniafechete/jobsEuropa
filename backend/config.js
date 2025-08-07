@@ -43,7 +43,7 @@ const config = {
   // Validation
   validation: {
     passwordMinLength: 6,
-    phoneRegex: /^(\+40|0)[0-9]{9}$/,
+    phoneRegex: /^\+[1-9]\d{1,14}$/,
     emailRegex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   },
   stripeSecretKey: process.env.STRIPE_SECRET_KEY || 'sk_test_xxx',

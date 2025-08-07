@@ -22,9 +22,9 @@ const userSchema = new mongoose.Schema(
       validate: {
         validator: function(v) {
           if (!v) return true; // Allow empty if email is provided
-          return /^(\+40|0)[0-9]{9}$/.test(v);
+          return true; // Allow any phone number format
         },
-        message: 'Phone number must be a valid Romanian number'
+        message: 'Phone number must be valid'
       }
     },
     email: { 

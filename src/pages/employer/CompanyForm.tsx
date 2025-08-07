@@ -289,7 +289,7 @@ export default function CompanyForm({ onSuccess = () => {}, initialData, onSave 
         />
         <select
           name="domain"
-          className="border rounded-lg px-4 py-2"
+          className="border rounded-lg px-4 py-2 w-full"
           value={form.domain}
           onChange={handleChange}
           required

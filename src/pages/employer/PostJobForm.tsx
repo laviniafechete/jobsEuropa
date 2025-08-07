@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Briefcase, Upload, Edit } from "lucide-react";
 import { useAuthStore } from "../../stores/authStore";
+import { useEmployer } from "../../context/EmployerContext";
 import JobAdCard from "./JobAdCard";
 import { API_BASE_URL } from "../../config/env";
 import EditJobAdModal from "./EditJobAdModal";
@@ -10,6 +11,7 @@ import { employerAPI } from "../../services/api";
 
 export default function PostJobForm() {
   const { employer, token } = useAuthStore();
+  const { updateJobAd } = useEmployer();
   const navigate = useNavigate();
   const { showSuccess, showError } = useSnackbar();
   const [form, setForm] = useState({
@@ -417,6 +419,7 @@ export default function PostJobForm() {
         ad={jobAds.find((a: any) => (a._id || a.id) === editAd)}
         open={!!editAd}
         onClose={() => setEditAd(null)}
+        updateJobAd={updateJobAd}
       />
     </div>
   );

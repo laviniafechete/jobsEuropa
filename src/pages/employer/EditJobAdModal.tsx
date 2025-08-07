@@ -8,11 +8,15 @@ type Props = {
   ad?: JobAd;
   open: boolean;
   onClose: () => void;
+  updateJobAd?: (ad: JobAd) => Promise<any>;
 };
 
-export default function EditJobAdModal({ ad, open, onClose }: Props) {
-  const { updateJobAd } = useEmployer();
+export default function EditJobAdModal({ ad, open, onClose, updateJobAd: propUpdateJobAd }: Props) {
+  const { updateJobAd: contextUpdateJobAd } = useEmployer();
   const { token } = useAuthStore();
+  
+  // Use prop function if provided, otherwise use context function
+  const updateJobAd = propUpdateJobAd || contextUpdateJobAd;
   const [form, setForm] = useState({
     title: "",
     requirements: "",
@@ -34,6 +38,9 @@ export default function EditJobAdModal({ ad, open, onClose }: Props) {
   useEffect(() => {
     console.log('EditJobAdModal received ad:', ad);
     if (ad) {
+      console.log('Ad type from backend:', ad.type);
+      console.log('Ad type category:', ad.category);
+      
       // Parse salary correctly
       let salaryDisplay = '';
       if (typeof ad.salary === 'string') {
@@ -50,11 +57,22 @@ export default function EditJobAdModal({ ad, open, onClose }: Props) {
 
       // Map type correctly from backend to frontend
       let mappedType = ad.type || "";
+      console.log('Original type:', mappedType);
+      console.log('Type length:', mappedType.length);
+      console.log('Type char codes:', mappedType.split('').map(c => c.charCodeAt(0)));
+      
       if (mappedType === 'fulltime') mappedType = 'Full-time';
       else if (mappedType === 'parttime') mappedType = 'Part-time';
       else if (mappedType === 'contract') mappedType = 'Proiect';
       else if (mappedType === 'internship') mappedType = 'Ocazional';
       else if (mappedType === 'seasonal') mappedType = 'Sezonier';
+      else if (mappedType === 'full-time') mappedType = 'Full-time';
+      else if (mappedType === 'part-time') mappedType = 'Part-time';
+      else if (mappedType === 'proiect') mappedType = 'Proiect';
+      else if (mappedType === 'ocazional') mappedType = 'Ocazional';
+      else if (mappedType === 'sezonier') mappedType = 'Sezonier';
+      
+      console.log('Mapped type:', mappedType);
 
       setForm({
         title: ad.title || "",
@@ -108,6 +126,7 @@ export default function EditJobAdModal({ ad, open, onClose }: Props) {
     console.log('Benefits:', benefits);
     console.log('Experience:', experience);
     console.log('Token from useAuthStore:', token ? 'exists' : 'missing');
+    console.log('updateJobAd function:', typeof updateJobAd);
     
     if (!ad?.id) {
       setError('ID-ul job-ului nu a fost găsit');
@@ -118,13 +137,23 @@ export default function EditJobAdModal({ ad, open, onClose }: Props) {
     setError(null);
     
     try {
-      await updateJobAd({ 
+      console.log('About to call updateJobAd with:', { 
         ...form, 
         id: ad.id,
         skills,
         benefits,
         experience
       });
+      
+      const result = await updateJobAd({ 
+        ...form, 
+        id: ad.id,
+        skills,
+        benefits,
+        experience
+      });
+      
+      console.log('updateJobAd completed successfully:', result);
       onClose();
     } catch (err: any) {
       console.error('Error in handleSubmit:', err);

@@ -47,15 +47,6 @@ export default function EditJobAdModal({ ad, open, onClose }: Props) {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setImgPreview(url);
-      setForm((f) => ({ ...f, image: url }));
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateJobAd({ ...form, id: ad.id });
@@ -130,16 +121,6 @@ export default function EditJobAdModal({ ad, open, onClose }: Props) {
             onChange={handleChange}
             required
           />
-          <label className="flex items-center gap-2 cursor-pointer">
-            <Upload className="text-green-600" />
-            <span>Imagine job (opțional)</span>
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImage}
-            />
-          </label>
           {imgPreview && (
             <img
               src={imgPreview}

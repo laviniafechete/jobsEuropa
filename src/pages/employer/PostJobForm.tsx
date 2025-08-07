@@ -57,15 +57,6 @@ export default function PostJobForm() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setImgPreview(url);
-      setForm((f) => ({ ...f, image: url }));
-    }
-  };
-
   // Handlers for skills and benefits
   const handleSkillAdd = () => {
     if (skillInput.trim() && !skills.includes(skillInput.trim())) {
@@ -386,16 +377,6 @@ export default function PostJobForm() {
             ))}
           </div>
         </div>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <Upload className="text-green-600" />
-          <span>Imagine job (opțional)</span>
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleImage}
-          />
-        </label>
         {imgPreview && (
           <img
             src={imgPreview}

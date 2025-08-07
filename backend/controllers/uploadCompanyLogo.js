@@ -35,6 +35,15 @@ export const uploadCompanyLogo = asyncHandler(async (req, res) => {
   // Ensure directory exists before operations
   const uploadDir = path.join(process.cwd(), '..', 'public', 'companyLogos');
   ensureDirectoryExists(uploadDir);
+  
+  console.log('=== UPLOAD DIRECTORY DEBUG ===');
+  console.log('Current working directory:', process.cwd());
+  console.log('Upload directory:', uploadDir);
+  console.log('Upload directory exists:', fs.existsSync(uploadDir));
+  console.log('Upload directory contents:', fs.existsSync(uploadDir) ? fs.readdirSync(uploadDir) : 'Directory does not exist');
+  console.log('req.file:', req.file);
+  console.log('req.file.filename:', req.file?.filename);
+  console.log('req.file.path:', req.file?.path);
 
   // Delete old logo if exists
   if (employer.companyProfile?.logoUrl) {
@@ -74,6 +83,14 @@ export const uploadCompanyLogo = asyncHandler(async (req, res) => {
   const verifyEmployer = await Employer.findById(req.user._id);
   console.log('Verification - employer companyProfile:', verifyEmployer.companyProfile);
   console.log('Verification - logo URL:', verifyEmployer.companyProfile?.logoUrl);
+  
+  // Verify file exists on disk
+  const savedLogoPath = path.join(process.cwd(), '..', 'public', logoUrl);
+  console.log('=== FILE VERIFICATION ===');
+  console.log('Saved logo path:', savedLogoPath);
+  console.log('File exists on disk:', fs.existsSync(savedLogoPath));
+  console.log('File size:', fs.existsSync(savedLogoPath) ? fs.statSync(savedLogoPath).size : 'File not found');
+  console.log('Directory contents after save:', fs.readdirSync(uploadDir));
 
   sendSuccess(res, {
     logoUrl: logoUrl,

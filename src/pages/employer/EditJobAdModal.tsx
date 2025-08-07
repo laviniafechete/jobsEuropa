@@ -25,14 +25,15 @@ export default function EditJobAdModal({ ad, open, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('EditJobAdModal received ad:', ad);
     if (ad) {
       setForm({
         title: ad.title,
-        requirements: ad.requirements,
+        requirements: ad.requirements || ad.description || "",
         location: ad.location,
         type: ad.type,
         salary: typeof ad.salary === 'string' ? ad.salary : `${ad.salary.min || ''} RON`,
-        domain: ad.domain,
+        domain: ad.domain || ad.category || "",
         image: ad.image || "",
       });
       setImgPreview(ad.image || null);

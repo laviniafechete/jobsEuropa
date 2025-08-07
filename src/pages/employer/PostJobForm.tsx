@@ -42,6 +42,7 @@ export default function PostJobForm() {
         });
         if (response.ok) {
           const data = await response.json();
+          console.log('Fetched jobs:', data.data.jobs);
           setJobAds(data.data.jobs || []);
         }
       } catch (e) { /* ignore */ }
@@ -341,7 +342,7 @@ export default function PostJobForm() {
             <input
               type="text"
               className="border rounded-lg px-4 py-2 flex-1"
-              placeholder="Adaugă skill"
+              placeholder="Adaugă competență"
               value={skillInput}
               onChange={e => setSkillInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleSkillAdd(); } }}
@@ -404,12 +405,16 @@ export default function PostJobForm() {
             </div>
           )}
           {jobAds.slice().reverse().map((ad: any) => (
-            <JobAdCard key={ad.id} ad={ad} onEdit={() => setEditAd(ad.id)} onPromote={() => handlePromoteJob(ad.id)} />
+            <JobAdCard key={ad._id || ad.id} ad={ad} onEdit={() => {
+              console.log('Edit clicked for job:', ad);
+              console.log('Job ID:', ad._id || ad.id);
+              setEditAd(ad._id || ad.id);
+            }} onPromote={() => handlePromoteJob(ad._id || ad.id)} />
           ))}
         </div>
       </div>
       <EditJobAdModal
-        ad={jobAds.find((a: any) => a.id === editAd)}
+        ad={jobAds.find((a: any) => (a._id || a.id) === editAd)}
         open={!!editAd}
         onClose={() => setEditAd(null)}
       />

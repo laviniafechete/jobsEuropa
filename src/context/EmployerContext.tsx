@@ -188,7 +188,19 @@ export function EmployerProvider({ children }: { children: React.ReactNode }) {
 
   const updateJobAd = async (ad: JobAd) => {
     try {
-      const token = localStorage.getItem("token");
+      console.log('=== UPDATE JOB AD START ===');
+      console.log('Job ad to update:', ad);
+      
+      // Try to get token from multiple sources
+      let token = localStorage.getItem("token");
+      console.log('Token from localStorage:', token ? 'exists' : 'missing');
+      
+      // If no token in localStorage, try to get from sessionStorage
+      if (!token) {
+        token = sessionStorage.getItem("token");
+        console.log('Token from sessionStorage:', token ? 'exists' : 'missing');
+      }
+      
       if (!token) {
         throw new Error("Nu ești autentificat");
       }
@@ -202,12 +214,20 @@ export function EmployerProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
+      // Map type correctly from frontend to backend
+      let mappedType = ad.type.toLowerCase();
+      if (mappedType === 'full-time') mappedType = 'fulltime';
+      else if (mappedType === 'part-time') mappedType = 'parttime';
+      else if (mappedType === 'proiect') mappedType = 'contract';
+      else if (mappedType === 'ocazional') mappedType = 'internship';
+      else if (mappedType === 'sezonier') mappedType = 'seasonal';
+
       // Map frontend fields to backend fields
       const jobData = {
         title: ad.title,
         description: ad.requirements,
         location: ad.location,
-        type: ad.type.toLowerCase().replace('-', ''),
+        type: mappedType,
         category: ad.domain,
         salary: salaryData,
         experience: ad.experience || 'entry',

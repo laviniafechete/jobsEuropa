@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useEmployer } from "../../context/EmployerContext";
+import { useAuthStore } from "../../stores/authStore";
 import { X, Briefcase, Upload } from "lucide-react";
 import type { JobAd } from "../../context/EmployerContext";
 
@@ -11,6 +12,7 @@ type Props = {
 
 export default function EditJobAdModal({ ad, open, onClose }: Props) {
   const { updateJobAd } = useEmployer();
+  const { token } = useAuthStore();
   const [form, setForm] = useState({
     title: "",
     requirements: "",
@@ -46,11 +48,19 @@ export default function EditJobAdModal({ ad, open, onClose }: Props) {
         }
       }
 
+      // Map type correctly from backend to frontend
+      let mappedType = ad.type || "";
+      if (mappedType === 'fulltime') mappedType = 'Full-time';
+      else if (mappedType === 'parttime') mappedType = 'Part-time';
+      else if (mappedType === 'contract') mappedType = 'Proiect';
+      else if (mappedType === 'internship') mappedType = 'Ocazional';
+      else if (mappedType === 'seasonal') mappedType = 'Sezonier';
+
       setForm({
         title: ad.title || "",
         requirements: ad.requirements || ad.description || "",
         location: ad.location || "",
-        type: ad.type || "",
+        type: mappedType,
         salary: salaryDisplay,
         domain: ad.domain || ad.category || "",
         image: ad.image || "",
@@ -90,6 +100,13 @@ export default function EditJobAdModal({ ad, open, onClose }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('=== HANDLE SUBMIT START ===');
+    console.log('Form data:', form);
+    console.log('Skills:', skills);
+    console.log('Benefits:', benefits);
+    console.log('Experience:', experience);
+    console.log('Token from useAuthStore:', token ? 'exists' : 'missing');
+    
     setIsSubmitting(true);
     setError(null);
     
@@ -103,6 +120,7 @@ export default function EditJobAdModal({ ad, open, onClose }: Props) {
       });
       onClose();
     } catch (err: any) {
+      console.error('Error in handleSubmit:', err);
       setError(err.message || 'Eroare la actualizarea job-ului');
     } finally {
       setIsSubmitting(false);

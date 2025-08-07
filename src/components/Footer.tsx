@@ -7,7 +7,7 @@ export default function Footer() {
   return (
     <footer className="w-full bg-white border-t py-6">
       <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 px-2 sm:px-4">
-        <div className="flex items-center gap-4 border border-red-300 p-2">
+        <div className="flex items-center gap-4 p-2">
           <a
             href="mailto:contact@jobs-europa.com"
             className="text-gray-500 hover:text-blue-600"
@@ -65,11 +65,11 @@ export default function Footer() {
           <a href="/newsletter-policy" className="hover:underline">Politica de Newsletter</a>
           <a href="/data-deletion" className="hover:underline">Ștergere Date</a>
         </div>
-        <span className="text-xs text-gray-400 text-center md:text-right">
-          &copy; {new Date().getFullYear()} Jobs Europa. Toate drepturile
-          rezervate.
-        </span>
       </div>
+      <span className="text-xs text-gray-400 text-center md:text-right">
+        &copy; {new Date().getFullYear()} Jobs Europa. Toate drepturile
+        rezervate.
+      </span>
     </footer>
   );
 }

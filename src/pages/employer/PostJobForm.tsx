@@ -12,6 +12,7 @@ import { employerAPI } from "../../services/api";
 export default function PostJobForm() {
   const { employer, token } = useAuthStore();
   const { updateJobAd } = useEmployer();
+  console.log('PostJobForm - updateJobAd function:', typeof updateJobAd);
   const navigate = useNavigate();
   const { showSuccess, showError } = useSnackbar();
   const [form, setForm] = useState({
@@ -416,7 +417,22 @@ export default function PostJobForm() {
         </div>
       </div>
       <EditJobAdModal
-        ad={jobAds.find((a: any) => (a._id || a.id) === editAd)}
+        ad={(() => {
+          console.log('All jobAds:', jobAds);
+          console.log('editAd value:', editAd);
+          const foundAd = jobAds.find((a: any) => {
+            console.log('Checking job:', a);
+            console.log('Job _id:', a._id);
+            console.log('Job id:', a.id);
+            console.log('editAd:', editAd);
+            const jobId = a._id || a.id;
+            const matches = jobId === editAd;
+            console.log('Job ID matches editAd:', matches);
+            return matches;
+          });
+          console.log('Found ad for edit:', foundAd);
+          return foundAd;
+        })()}
         open={!!editAd}
         onClose={() => setEditAd(null)}
         updateJobAd={updateJobAd}

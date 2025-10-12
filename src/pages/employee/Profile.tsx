@@ -13,8 +13,6 @@ import {
   Save, 
   X,
   Calendar,
-  GraduationCap,
-  Languages,
   Car,
   FileText,
   Globe,

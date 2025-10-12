@@ -21,9 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Existing password hashes remain compatible
   - Updated 4 files: Admin.js, registerUser.js, loginUser.js, updateAdminPassword.js
 - Removed duplicate dependencies from frontend package.json
-  - Removed: `express-session`, `passport`, `passport-google-oauth20`, `stripe`
+  - Removed from frontend: `passport`, `passport-google-oauth20`
+  - Kept in backend: `express-session` (OAuth), `stripe` (payments)
   - These are backend-only dependencies
   - Reduced frontend dependencies from 52 to 24 packages (-54%)
+  - Backend now has correct 15 packages (all required)
 - Fixed backend package.json formatting issues
 - Improved type safety across codebase
   - Replaced 25+ `any` types with proper TypeScript types

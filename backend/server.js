@@ -91,8 +91,8 @@ passport.use(new GoogleStrategy({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Rate limiting
-app.use(rateLimit(100, 15 * 60 * 1000)); // 100 requests per 15 minutes
+// Rate limiting - more generous for production
+app.use(rateLimit(1000, 15 * 60 * 1000)); // 1000 requests per 15 minutes
 
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

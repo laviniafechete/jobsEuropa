@@ -150,8 +150,8 @@ export const checkEmployerSubscription = (req, res, next) => {
   });
 };
 
-// Rate limiting helper
-export const rateLimit = (maxRequests = 100, windowMs = 15 * 60 * 1000) => {
+// Rate limiting helper - more generous defaults
+export const rateLimit = (maxRequests = 1000, windowMs = 15 * 60 * 1000) => {
   const requests = new Map();
 
   return (req, res, next) => {

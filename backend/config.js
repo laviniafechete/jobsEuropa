@@ -10,8 +10,6 @@ const config = {
   // Database configuration
   mongoUri: process.env.MONGO_URI || 'mongodb://localhost:27017/jobs-europa',
   mongoOptions: {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
     maxPoolSize: 10,
     serverSelectionTimeoutMS: 5000,
     socketTimeoutMS: 45000,
@@ -22,7 +20,7 @@ const config = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '1h',
   
   // CORS configuration
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173,http://127.0.0.1:5173',
   
   // Email configuration
   email: {

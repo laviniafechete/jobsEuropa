@@ -342,7 +342,7 @@ export default function EmployeeCVForm() {
         throw new Error(errorData.message || "Eroare la salvarea CV-ului");
       }
 
-      const result = await response.json();
+      await response.json();
       
       // Update user in store with hasCompletedCv: true
       updateUser({
@@ -352,8 +352,9 @@ export default function EmployeeCVForm() {
       
       showSuccess("CV-ul a fost salvat cu succes!");
       navigate("/employee/jobs");
-    } catch (error: any) {
-      showError(error.message || "Eroare la salvarea CV-ului. Vă rugăm încercați din nou.");
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Eroare la salvarea CV-ului. Vă rugăm încercați din nou.";
+      showError(errorMessage);
     } finally {
       setIsLoading(false);
     }

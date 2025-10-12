@@ -4,14 +4,11 @@ import {
   Users, 
   Building2, 
   Briefcase, 
-  FileText, 
   TrendingUp, 
   Euro, 
   Activity,
   LogOut,
-  Calendar,
-  Check,
-  X
+  Check
 } from 'lucide-react';
 import { useAdminStore } from '../../stores/adminStore';
 import { useSnackbar } from '../../hooks/useSnackbar';
@@ -60,7 +57,15 @@ interface Analytics {
   };
 }
 
-const StatCard = ({ title, value, icon: Icon, color, change }: any) => (
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  change?: number;
+}
+
+const StatCard = ({ title, value, icon: Icon, color, change }: StatCardProps) => (
   <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
     <div className="flex items-center justify-between">
       <div>

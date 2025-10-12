@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../../stores/authStore";
 import { useSnackbar } from "../../hooks/useSnackbar";
-import { Briefcase, MapPin, CheckCircle, ArrowRight } from "lucide-react";
+import { Briefcase, MapPin, CheckCircle } from "lucide-react";
 import { API_BASE_URL } from "../../config/env";
 
 interface AppliedJob {
@@ -26,14 +26,10 @@ interface AppliedJob {
 
 export default function EmployeeHome() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user, token } = useAuthStore();
-  const { showError } = useSnackbar();
   const [showCVModal, setShowCVModal] = useState(false);
   const [appliedJobs, setAppliedJobs] = useState<AppliedJob[]>([]);
   const [loading, setLoading] = useState(false);
-  const hasNavigated = useRef(false);
-  const fetchedRef = useRef(false);
   const fetchedTokenRef = useRef<string | null>(null);
 
   // Fetch applied jobs

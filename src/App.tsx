@@ -62,8 +62,6 @@ import { clearAllCookies } from "./utils/cookieUtils";
 // Component to clear localStorage on specific routes
 const RouteWatcher = () => {
   const location = useLocation();
-  const { logout: logoutUser } = useAuthStore();
-  const { logout: logoutAdmin } = useAdminStore();
 
   useEffect(() => {
     const currentPath = location.pathname;

@@ -73,10 +73,9 @@ export default function JobList() {
   const [search, setSearch] = useState("");
   const [domain, setDomain] = useState("");
   const [type, setType] = useState("");
-  const [applying, setApplying] = useState<{ [key: string]: boolean }>({});
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [acceptTerms] = useState(false);
 
   // Fetch jobs from API
   const fetchJobs = async (pageNum = 1, reset = false) => {
@@ -127,65 +126,6 @@ export default function JobList() {
     fetchJobs(1, true);
   }, [search, domain, type]);
 
-  // Apply to job
-  const handleApply = async (job: Job) => {
-    if (!user) {
-      showError("Trebuie să fii autentificat pentru a aplica.");
-      return;
-    }
-    
-    if (!token) {
-      showError("Sesiunea a expirat. Te rugăm să te loghezi din nou.");
-      return;
-    }
-
-    if (job.hasApplied) {
-      showError("Ai aplicat deja la acest job.");
-      return;
-    }
-    
-    if (!acceptTerms) {
-      showError('Trebuie să accepți Politica de Confidențialitate și Termenii și Condițiile!');
-      return;
-    }
-
-    setApplying(prev => ({ ...prev, [job._id]: true }));
-
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/jobs/${job._id}/apply`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || "Eroare la aplicare");
-      }
-
-      // Update local state
-      setJobs(prev => 
-        prev.map(j => 
-          j._id === job._id 
-            ? { ...j, hasApplied: true }
-            : j
-        )
-      );
-
-      showSuccess("Aplicația a fost trimisă cu succes!");
-    } catch (error: any) {
-      console.error("Error applying to job:", error);
-      showError(error.message || "Nu s-a putut trimite aplicarea. Vă rugăm încercați din nou.");
-    } finally {
-      setApplying(prev => ({ ...prev, [job._id]: false }));
-    }
-  };
-
   // Load more jobs
   const loadMore = () => {
     if (!loading && hasMore) {
@@ -201,7 +141,7 @@ export default function JobList() {
   });
 
   // Format salary
-  const formatSalary = (salary: any) => {
+  const formatSalary = (salary: Job['salary'] | string | null | undefined): string => {
     if (!salary) return "Salariu negociabil";
     if (typeof salary === "string") return salary;
     if (typeof salary === "object") {

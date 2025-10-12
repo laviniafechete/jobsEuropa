@@ -61,14 +61,14 @@ export default defineConfig(({ command, mode }) => {
             changeOrigin: true,
             secure: false,
             ws: true, // Proxy WebSockets
-            configure: (proxy, _options) => {
-              proxy.on('error', (err, _req, _res) => {
+            configure: (proxy) => {
+              proxy.on('error', (err) => {
                 console.log('Proxy error:', err);
               });
-              proxy.on('proxyReq', (proxyReq, req, _res) => {
+              proxy.on('proxyReq', (proxyReq) => {
                 console.log('Sending Request to:', proxyReq.path);
               });
-              proxy.on('proxyRes', (proxyRes, req, _res) => {
+              proxy.on('proxyRes', (proxyRes, req) => {
                 console.log('Received Response from:', req.url, 'Status:', proxyRes.statusCode);
               });
             },

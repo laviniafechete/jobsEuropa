@@ -28,7 +28,6 @@ const cardContent = {
 
 export default function EntryCard({ type, onClick }: EntryCardProps) {
   const content = cardContent[type];
-  const isCandidat = type === "candidat";
   return (
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col h-full min-h-[400px] sm:min-h-[450px] max-w-sm mx-auto w-full">
       <div className="relative h-48 sm:h-52">

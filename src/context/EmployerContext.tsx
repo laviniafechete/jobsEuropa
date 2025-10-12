@@ -45,17 +45,13 @@ type EmployerContextType = {
   ) => void;
   logout: (cb?: () => void) => void;
   updateCompany: (company: Company) => void;
-  addJobAd: (ad: Omit<JobAd, "id">) => Promise<any>;
-  updateJobAd: (ad: JobAd) => Promise<any>;
+  addJobAd: (ad: Omit<JobAd, "id">) => Promise<void>;
+  updateJobAd: (ad: JobAd) => Promise<void>;
 };
 
 const EmployerContext = createContext<EmployerContextType | undefined>(
   undefined
 );
-
-function generateId() {
-  return Math.random().toString(36).slice(2, 10) + Date.now();
-}
 
 export function EmployerProvider({ children }: { children: React.ReactNode }) {
   const [employer, setEmployer] = useState<Employer | null>(null);
@@ -73,12 +69,16 @@ export function EmployerProvider({ children }: { children: React.ReactNode }) {
     if (companyStr) {
       try {
         company = JSON.parse(companyStr);
-      } catch {}
+      } catch {
+        // Invalid JSON in localStorage, ignore
+      }
     }
     if (jobAdsStr) {
       try {
         jobAds = JSON.parse(jobAdsStr);
-      } catch {}
+      } catch {
+        // Invalid JSON in localStorage, ignore
+      }
     }
     if (token && employerId && email) {
       setEmployer({

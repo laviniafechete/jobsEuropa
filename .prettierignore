@@ -1,0 +1,25 @@
+# Build outputs
+dist
+build
+coverage
+
+# Dependencies
+node_modules
+backend/node_modules
+
+# Logs
+*.log
+
+# Env files
+.env
+.env.*
+
+# Generated files
+package-lock.json
+yarn.lock
+backend/package-lock.json
+
+# Uploads
+uploads
+backend/uploads
+

@@ -30,8 +30,6 @@ export const protect = async (req, res, next) => {
       token = req.headers.authorization.split(' ')[1];
     }
 
-    console.log("Auth middleware - token:", token ? "exists" : "missing");
-
     // Check if token exists
     if (!token) {
       throw new AuthenticationError('Access denied. No token provided');
@@ -41,13 +39,10 @@ export const protect = async (req, res, next) => {
     const decoded = verifyToken(token);
 
     // Get user from token
-    console.log("Decoded token:", decoded);
     const user = await User.findOne({ userId: decoded.userId }).select('-password');
-    console.log("Found user:", user ? "yes" : "no");
     if (user) {
       req.user = user;
       req.userType = 'user';
-      console.log("User authenticated:", user.userId);
       return next();
     }
 
@@ -56,13 +51,11 @@ export const protect = async (req, res, next) => {
     if (employer) {
       req.user = employer;
       req.userType = 'employer';
-      console.log("Employer authenticated:", employer.userId);
       return next();
     }
 
     throw new AuthenticationError('User not found');
   } catch (error) {
-    console.log("Auth middleware error:", error.message);
     next(error);
   }
 };
@@ -89,9 +82,6 @@ export const protectUser = async (req, res, next) => {
 export const protectEmployer = async (req, res, next) => {
   try {
     await protect(req, res, () => {});
-    console.log('--- DEBUG protectEmployer ---');
-    console.log('req.userType:', req.userType);
-    console.log('req.user:', req.user);
     if (req.userType !== 'employer') {
       throw new AuthorizationError('Access denied. Employer account required');
     }

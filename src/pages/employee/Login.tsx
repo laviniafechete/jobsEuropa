@@ -59,8 +59,9 @@ export default function Login() {
                await login(data.data.token, 'user', data.data.user);
       showSuccess("Autentificare reușită!");
       navigate("/employee/home");
-    } catch (error: any) {
-      showError(error.message || "Eroare la autentificare. Vă rugăm încercați din nou.");
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Eroare la autentificare. Vă rugăm încercați din nou.";
+      showError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -100,8 +101,9 @@ export default function Login() {
           setShowSmsInput(true);
           showSuccess("Codul SMS a fost trimis!");
         }
-      } catch (error: any) {
-        showError(error.message || "Eroare la trimiterea SMS-ului. Vă rugăm încercați din nou.");
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Eroare la trimiterea SMS-ului. Vă rugăm încercați din nou.";
+        showError(errorMessage);
       } finally {
         setIsSendingSms(false);
       }

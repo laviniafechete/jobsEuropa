@@ -1,5 +1,5 @@
 import User from "../models/User.js";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { asyncHandler, sendSuccess, sendError } from "../utils/errorHandler.js";
 import { sendVerificationEmail } from "./sendEmail.js";

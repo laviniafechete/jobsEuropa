@@ -1,6 +1,6 @@
 import express from "express";
 import mongoose from "mongoose";
-// import cors from "cors"; // REMOVED - doing manual CORS
+import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
@@ -27,23 +27,24 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// ===== CORS CONFIGURATION FOR APP PLATFORM =====
-app.use((req, res, next) => {
-  // Allow all origins for App Platform
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Max-Age', '86400');
-  
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-  
-  next();
-});
+// ===== CORS CONFIGURATION =====
+const corsOptions = {
+  origin: (origin, callback) => {
+    const allowedOrigins = config.corsOrigin.split(',').map(o => o.trim());
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  maxAge: 86400 // 24 hours
+};
+
+app.use(cors(corsOptions));
 
 // Passport session setup (required for OAuth)
 app.use(session({
@@ -128,7 +129,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/cv", cvRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/employers", employerRoutes);
-app.use("/api/employer", employerRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/admin", adminRoutes);
 

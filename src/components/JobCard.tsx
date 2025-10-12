@@ -41,7 +41,7 @@ interface JobCardProps {
 }
 
 export default function JobCard({ job, onClick }: JobCardProps) {
-  const formatSalary = (salary: any) => {
+  const formatSalary = (salary: Job['salary'] | string | null | undefined): string => {
     if (!salary) return "Salariu negociabil";
     if (typeof salary === "string") return salary;
     if (typeof salary === "object") {

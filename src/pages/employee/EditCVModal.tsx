@@ -122,7 +122,7 @@ export default function EditCVModal({ open, onClose }: EditCVModalProps) {
       showSuccess("CV-ul a fost actualizat cu succes!");
       onClose();
       // Nu e nevoie de setIsSubmitting(false) aici, modalul se închide
-    } catch (error) {
+    } catch {
       showError("A apărut o problemă la salvarea CV-ului. Încearcă din nou.");
       setIsSubmitting(false);
     }

@@ -4,12 +4,10 @@ import {
   Briefcase, 
   ArrowLeft,
   MapPin,
-  Calendar,
   Search,
   Filter,
   Eye,
   Users,
-  Clock,
   CheckCircle,
   XCircle,
   Building2

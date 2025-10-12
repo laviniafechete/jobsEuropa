@@ -5,17 +5,13 @@ import {
   BarChart3,
   TrendingUp,
   Download,
-  Calendar,
   Users,
   Briefcase,
   Building2,
   MapPin,
-  Clock,
   Eye,
   CheckCircle,
-  XCircle,
   Target,
-  Filter,
   RefreshCw
 } from 'lucide-react';
 import { useAdminStore } from '../../stores/adminStore';

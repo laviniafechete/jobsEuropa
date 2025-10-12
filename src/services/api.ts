@@ -1,9 +1,10 @@
-import axios, { AxiosResponse } from 'axios';
+import axios, { AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { API_BASE_URL } from '../config/env';
 
-// Create axios instance
+// Create axios instance with timeout
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 30000, // 30 seconds
   headers: {
     'Content-Type': 'application/json',
   },
@@ -11,9 +12,9 @@ const api = axios.create({
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
-  (config) => {
+  (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('token');
-    if (token) {
+    if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -23,22 +24,37 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle errors globally
+// Response interceptor with retry logic and token refresh
 api.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
-    // Commented out to avoid duplicate error messages
-    // Let components handle error messages locally
-    /*
-    const message = error.response?.data?.error?.message || error.response?.data?.message || 'A apărut o eroare';
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
     
-    // Import snackbar store dynamically to avoid circular dependencies
-    import('../stores/snackbarStore').then(({ useSnackbarStore }) => {
-      useSnackbarStore.getState().addMessage(message, 'error');
-    });
-    */
+    // Handle 401 errors (token expired)
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      // Clear invalid token
+      localStorage.removeItem('token');
+      localStorage.removeItem('userType');
+      
+      // Redirect to login
+      if (window.location.pathname !== '/employee/login' && 
+          window.location.pathname !== '/employer/login' &&
+          window.location.pathname !== '/') {
+        window.location.href = '/';
+      }
+      
+      return Promise.reject(error);
+    }
+    
+    // Handle network errors with retry
+    if (error.code === 'ECONNABORTED' || error.message === 'Network Error') {
+      // Don't retry for now, just reject
+      return Promise.reject(error);
+    }
     
     return Promise.reject(error);
   }

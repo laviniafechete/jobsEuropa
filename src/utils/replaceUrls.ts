@@ -26,9 +26,9 @@ export const urlMap = {
   'http://localhost:5001/api/jobs/employer/my-jobs': () => getApiUrl('/jobs/employer/my-jobs'),
   
   // Employer endpoints
-  'http://localhost:5001/api/employer/profile': () => getApiUrl('/employer/profile'),
-  'http://localhost:5001/api/employer/save-profile': () => getApiUrl('/employer/save-profile'),
-  'http://localhost:5001/api/employer/change-password': () => getApiUrl('/employer/change-password'),
+  'http://localhost:5001/api/employers/profile': () => getApiUrl('/employers/profile'),
+  'http://localhost:5001/api/employers/save-profile': () => getApiUrl('/employers/save-profile'),
+  'http://localhost:5001/api/employers/change-password': () => getApiUrl('/employers/change-password'),
 };
 
 // Helper function to get correct URL

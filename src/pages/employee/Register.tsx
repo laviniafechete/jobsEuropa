@@ -1,41 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useSnackbar } from "../../hooks/useSnackbar";
-import { Eye, EyeOff, Mail, Phone, ArrowLeft, CheckCircle } from "lucide-react";
-import PhoneInput from '../../components/PhoneInput';
-import { getApiUrl } from '../../config/env';
+import { Eye, EyeOff, Mail, Phone, ArrowLeft } from "lucide-react";
+import PhoneInput from "../../components/PhoneInput";
+import { getApiUrl } from "../../config/env";
+
+interface RegisterResponse {
+  success: boolean;
+  data?: {
+    requiresSmsVerification?: boolean;
+  };
+  error?: {
+    message?: string;
+  };
+}
 
 export default function Register() {
   const navigate = useNavigate();
   const { showSuccess, showError } = useSnackbar();
-  
+
   const [registerMethod, setRegisterMethod] = useState<"email" | "phone">("email");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
-  
+
   // Common fields
   const [name, setName] = useState("");
-  
+
   // Email registration fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  
+
   // Phone registration fields
-  const [phone, setPhone] = useState({ prefix: '+40', number: '' });
+  const [phone, setPhone] = useState({ prefix: "+40", number: "" });
   const [phonePassword, setPhonePassword] = useState("");
   const [phoneConfirmPassword, setPhoneConfirmPassword] = useState("");
   const [smsCode, setSmsCode] = useState("");
   const [showSmsInput, setShowSmsInput] = useState(false);
   const [isSendingSms, setIsSendingSms] = useState(false);
-  const [registrationData, setRegistrationData] = useState<any>(null);
 
   const handleEmailRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!acceptTerms) {
-      showError('Trebuie să accepți Politica de Confidențialitate și Termenii și Condițiile!');
+      showError("Trebuie să accepți Politica de Confidențialitate și Termenii și Condițiile!");
       return;
     }
     if (isLoading) return;
@@ -71,20 +80,24 @@ export default function Register() {
         }),
       });
 
-      const data = await response.json();
+      const data: RegisterResponse = await response.json();
 
       if (!response.ok) {
         throw new Error(data.error?.message || "Eroare la înregistrare");
       }
 
       showSuccess("Cont creat cu succes! Verifică email-ul pentru a activa contul.");
-      
+
       // Show success message and redirect to login
       setTimeout(() => {
         navigate("/employee/login");
       }, 2000);
-    } catch (error: any) {
-      showError(error.message || "Eroare la înregistrare. Vă rugăm încercați din nou.");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Eroare la înregistrare. Vă rugăm încercați din nou.";
+      showError(message);
     } finally {
       setIsLoading(false);
     }
@@ -93,7 +106,7 @@ export default function Register() {
   const handlePhoneRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!acceptTerms) {
-      showError('Trebuie să accepți Politica de Confidențialitate și Termenii și Condițiile!');
+      showError("Trebuie să accepți Politica de Confidențialitate și Termenii și Condițiile!");
       return;
     }
     if (isLoading || isSendingSms) return;
@@ -115,21 +128,24 @@ export default function Register() {
           body: JSON.stringify({
             name,
             phone: phone.prefix + phone.number,
-            registerMethod: "phone"
+            registerMethod: "phone",
           }),
         });
 
-        const data = await response.json();
+        const data: RegisterResponse = await response.json();
 
         if (!response.ok) {
           throw new Error(data.error?.message || "Eroare la înregistrare");
         }
 
-        setRegistrationData(data.data);
         setShowSmsInput(true);
         showSuccess("Cont creat! Verifică telefonul pentru codul de confirmare.");
-      } catch (error: any) {
-        showError(error.message || "Eroare la înregistrare. Vă rugăm încercați din nou.");
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Eroare la înregistrare. Vă rugăm încercați din nou.";
+        showError(message);
       } finally {
         setIsSendingSms(false);
       }
@@ -160,24 +176,28 @@ export default function Register() {
           body: JSON.stringify({
             phone: phone.prefix + phone.number,
             smsCode,
-            password: phonePassword
+            password: phonePassword,
           }),
         });
 
-        const data = await response.json();
+        const data: RegisterResponse = await response.json();
 
         if (!response.ok) {
           throw new Error(data.error?.message || "Eroare la verificarea SMS-ului");
         }
 
         showSuccess("Cont activat cu succes! Te poți autentifica acum.");
-        
+
         // Redirect to login
         setTimeout(() => {
           navigate("/employee/login");
         }, 2000);
-      } catch (error: any) {
-        showError(error.message || "Eroare la verificarea SMS-ului. Vă rugăm încercați din nou.");
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Eroare la verificarea SMS-ului. Vă rugăm încercați din nou.";
+        showError(message);
       } finally {
         setIsLoading(false);
       }
@@ -187,21 +207,6 @@ export default function Register() {
   const handleBackToPhoneInput = () => {
     setShowSmsInput(false);
     setSmsCode("");
-    setRegistrationData(null);
-  };
-
-  const formatPhoneNumber = (value: string) => {
-    // Remove all non-digits
-    const digits = value.replace(/\D/g, '');
-    
-    // Format as Romanian phone number
-    if (digits.startsWith('0')) {
-      return digits.replace(/(\d{1})(\d{3})(\d{3})(\d{3})/, '$1$2$3$4');
-    } else if (digits.startsWith('40')) {
-      return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{3})/, '0$2$3$4');
-    }
-    
-    return digits;
   };
 
   return (
@@ -214,10 +219,9 @@ export default function Register() {
               {showSmsInput ? "Verificare telefon" : "Înregistrare"}
             </h1>
             <p className="text-gray-600">
-              {showSmsInput 
+              {showSmsInput
                 ? "Completează verificarea telefonului"
-                : "Creează contul tău de candidat"
-              }
+                : "Creează contul tău de candidat"}
             </p>
           </div>
 
@@ -253,9 +257,7 @@ export default function Register() {
           {registerMethod === "email" && !showSmsInput && (
             <form onSubmit={handleEmailRegister} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nume complet
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nume complet</label>
                 <input
                   type="text"
                   value={name}
@@ -267,9 +269,7 @@ export default function Register() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                 <input
                   type="email"
                   value={email}
@@ -279,11 +279,9 @@ export default function Register() {
                   required
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Parolă
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Parolă</label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
@@ -321,14 +319,32 @@ export default function Register() {
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
-                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 mt-2">
-                <input type="checkbox" id="acceptTerms" checked={acceptTerms} onChange={e => setAcceptTerms(e.target.checked)} />
-                <label htmlFor="acceptTerms" className="text-sm">Sunt de acord cu <a href="/privacy-policy" className="underline">Politica de Confidențialitate</a> și <a href="/terms-and-conditions" className="underline">Termenii și Condițiile</a></label>
+                <input
+                  type="checkbox"
+                  id="acceptTerms"
+                  checked={acceptTerms}
+                  onChange={(e) => setAcceptTerms(e.target.checked)}
+                />
+                <label htmlFor="acceptTerms" className="text-sm">
+                  Sunt de acord cu{" "}
+                  <a href="/privacy-policy" className="underline">
+                    Politica de Confidențialitate
+                  </a>{" "}
+                  și{" "}
+                  <a href="/terms-and-conditions" className="underline">
+                    Termenii și Condițiile
+                  </a>
+                </label>
               </div>
 
               <button
@@ -360,12 +376,7 @@ export default function Register() {
                     />
                   </div>
 
-                  <PhoneInput
-                    label="Număr de telefon"
-                    value={phone}
-                    onChange={setPhone}
-                    required
-                  />
+                  <PhoneInput label="Număr de telefon" value={phone} onChange={setPhone} required />
                 </>
               ) : (
                 <>
@@ -385,7 +396,7 @@ export default function Register() {
                   <input
                     type="text"
                     value={smsCode}
-                    onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-lg tracking-widest"
                     placeholder="000000"
                     maxLength={6}
@@ -396,9 +407,7 @@ export default function Register() {
                   </p>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Parolă
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Parolă</label>
                     <div className="relative">
                       <input
                         type={showPassword ? "text" : "password"}
@@ -413,7 +422,11 @@ export default function Register() {
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -436,7 +449,11 @@ export default function Register() {
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
-                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showConfirmPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -444,8 +461,22 @@ export default function Register() {
               )}
 
               <div className="flex items-center gap-2 mt-2">
-                <input type="checkbox" id="acceptTerms" checked={acceptTerms} onChange={e => setAcceptTerms(e.target.checked)} />
-                <label htmlFor="acceptTerms" className="text-sm">Sunt de acord cu <a href="/privacy-policy" className="underline">Politica de Confidențialitate</a> și <a href="/terms-and-conditions" className="underline">Termenii și Condițiile</a></label>
+                <input
+                  type="checkbox"
+                  id="acceptTerms"
+                  checked={acceptTerms}
+                  onChange={(e) => setAcceptTerms(e.target.checked)}
+                />
+                <label htmlFor="acceptTerms" className="text-sm">
+                  Sunt de acord cu{" "}
+                  <a href="/privacy-policy" className="underline">
+                    Politica de Confidențialitate
+                  </a>{" "}
+                  și{" "}
+                  <a href="/terms-and-conditions" className="underline">
+                    Termenii și Condițiile
+                  </a>
+                </label>
               </div>
 
               <button
@@ -453,14 +484,13 @@ export default function Register() {
                 disabled={isLoading || isSendingSms}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-200 disabled:opacity-50"
               >
-                {isLoading 
-                  ? "Se verifică..." 
-                  : isSendingSms 
-                    ? "Se trimite SMS..." 
-                    : showSmsInput 
-                      ? "Activează contul" 
-                      : "Trimite codul SMS"
-                }
+                {isLoading
+                  ? "Se verifică..."
+                  : isSendingSms
+                  ? "Se trimite SMS..."
+                  : showSmsInput
+                  ? "Activează contul"
+                  : "Trimite codul SMS"}
               </button>
             </form>
           )}

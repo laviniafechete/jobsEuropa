@@ -1,8 +1,7 @@
 import User from "../models/User.js";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import { asyncHandler, sendSuccess, sendError } from "../utils/errorHandler.js";
-import config from "../config.js";
+import { generateToken } from "../middlewares/authMiddleware.js";
 
 export const loginUser = asyncHandler(async (req, res) => {
   const { email, password, phone, loginMethod } = req.body;
@@ -63,12 +62,15 @@ export const loginUser = asyncHandler(async (req, res) => {
     return sendError(res, "Metoda de login invalidă", 400);
   }
 
+  // Update last login timestamp
+  user.lastLogin = new Date();
+  await user.save();
+
   // Generate JWT token
-  const token = jwt.sign(
-    { userId: user.userId, userType: "user" },
-    process.env.JWT_SECRET,
-    { expiresIn: config.jwtExpiresIn }
-  );
+  const token = generateToken({
+    userId: user.userId,
+    userType: "user"
+  });
 
   // Remove sensitive data
   const userResponse = {
@@ -119,14 +121,14 @@ export const verifySmsCode = asyncHandler(async (req, res) => {
   // Clear SMS code after successful verification
   user.smsVerificationCode = undefined;
   user.smsCodeExpiry = undefined;
+  user.lastLogin = new Date();
   await user.save();
 
   // Generate JWT token
-  const token = jwt.sign(
-    { userId: user.userId, userType: "user" },
-    process.env.JWT_SECRET,
-    { expiresIn: config.jwtExpiresIn }
-  );
+  const token = generateToken({
+    userId: user.userId,
+    userType: "user"
+  });
 
   // Remove sensitive data
   const userResponse = {

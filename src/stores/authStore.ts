@@ -16,6 +16,20 @@ export interface User {
   lastLogin: string;
 }
 
+export interface CompanyProfile {
+  name?: string;
+  cui?: string;
+  location?: string;
+  domain?: string;
+  description?: string;
+  contactPerson?: string;
+  position?: string;
+  email?: string;
+  phone?: string;
+  website?: string;
+  logoUrl?: string;
+}
+
 export interface Employer {
   _id: string;
   userId: string;
@@ -28,7 +42,7 @@ export interface Employer {
   updatedAt: string;
   lastLogin: string;
   hasProfileCompleted?: boolean;
-  companyProfile?: any;
+  companyProfile?: CompanyProfile;
   subscriptionActive?: boolean;
   subscriptionType?: 'none' | 'basic' | 'premium' | 'single' | 'promotion';
   subscriptionEnd?: string;

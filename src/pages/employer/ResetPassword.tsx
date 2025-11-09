@@ -1,24 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { authAPI } from '../../services/api';
-import { useSnackbar } from '../../hooks/useSnackbar';
-import PhoneInput from '../../components/PhoneInput';
-import { getApiUrl } from '../../config/env';
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { authAPI } from "../../services/api";
+import { useSnackbar } from "../../hooks/useSnackbar";
+import PhoneInput from "../../components/PhoneInput";
+import { getApiUrl } from "../../config/env";
+
+interface PhoneValue {
+  prefix: string;
+  number: string;
+}
 
 const EmployerResetPassword: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  const token = searchParams.get("token");
   
-  const [method, setMethod] = useState<'email' | 'phone'>('email');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState({ prefix: '+40', number: '' });
+  const [method, setMethod] = useState<"email" | "phone">("email");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState<PhoneValue>({ prefix: "+40", number: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [submittedValue, setSubmittedValue] = useState('');
+  const [submittedValue, setSubmittedValue] = useState("");
   
   // For password change with token
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isTokenValid, setIsTokenValid] = useState<boolean | null>(null);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   
@@ -26,48 +31,48 @@ const EmployerResetPassword: React.FC = () => {
   const { showSuccess, showError } = useSnackbar();
 
   // Check if token is valid when component mounts
-  useEffect(() => {
-    if (token) {
-      verifyToken();
-    }
-  }, [token]);
-
-  const verifyToken = async () => {
+  const verifyToken = useCallback(async () => {
     try {
-      const response = await fetch(`${getApiUrl('/auth/verify-reset-token/employer')}/${token}`);
+      const response = await fetch(`${getApiUrl("/auth/verify-reset-token/employer")}/${token}`);
       const data = await response.json();
       
       if (data.success) {
         setIsTokenValid(true);
       } else {
         setIsTokenValid(false);
-        showError('Token invalid sau expirat');
+        showError("Token invalid sau expirat");
       }
-    } catch (error) {
+    } catch {
       setIsTokenValid(false);
-      showError('Eroare la verificarea token-ului');
+      showError("Eroare la verificarea token-ului");
     }
-  };
+  }, [token, showError]);
+
+  useEffect(() => {
+    if (token) {
+      verifyToken();
+    }
+  }, [token, verifyToken]);
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (newPassword !== confirmPassword) {
-      showError('Parolele nu se potrivesc');
+      showError("Parolele nu se potrivesc");
       return;
     }
     
     if (newPassword.length < 6) {
-      showError('Parola trebuie să aibă minim 6 caractere');
+      showError("Parola trebuie să aibă minim 6 caractere");
       return;
     }
     
     setIsChangingPassword(true);
     try {
-      const response = await fetch(`${getApiUrl('/auth/change-password-with-token/employer')}/${token}`, {
-        method: 'POST',
+      const response = await fetch(`${getApiUrl("/auth/change-password-with-token/employer")}/${token}`, {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ newPassword }),
       });
@@ -75,18 +80,20 @@ const EmployerResetPassword: React.FC = () => {
       const data = await response.json();
       
       if (data.success) {
-        showSuccess('Parola a fost schimbată cu succes!');
-        localStorage.removeItem('token');
-        localStorage.removeItem('userType');
+        showSuccess("Parola a fost schimbată cu succes!");
+        localStorage.removeItem("token");
+        localStorage.removeItem("userType");
         sessionStorage.clear();
         setTimeout(() => {
-          navigate('/employer/login');
+          navigate("/employer/login");
         }, 2000);
       } else {
-        showError(data.error?.message || 'Eroare la schimbarea parolei');
+        showError(data.error?.message || "Eroare la schimbarea parolei");
       }
-    } catch (error: any) {
-      showError('A apărut o eroare la schimbarea parolei');
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "A apărut o eroare la schimbarea parolei";
+      showError(message);
     } finally {
       setIsChangingPassword(false);
     }
@@ -100,21 +107,23 @@ const EmployerResetPassword: React.FC = () => {
 
     try {
       let response;
-      if (method === 'email') {
-        response = await authAPI.resetPassword({ email, userType: 'employer' });
+      if (method === "email") {
+        response = await authAPI.resetPassword({ email, userType: "employer" });
       } else {
-        response = await authAPI.resetPassword({ phone: phone.prefix + phone.number, userType: 'employer' });
+        response = await authAPI.resetPassword({ phone: phone.prefix + phone.number, userType: "employer" });
       }
       
       if (response.success) {
-        showSuccess('Email-ul de resetare a fost trimis cu succes!');
+        showSuccess("Email-ul de resetare a fost trimis cu succes!");
         setIsSubmitted(true);
-        setSubmittedValue(method === 'email' ? email : phone.number);
+        setSubmittedValue(method === "email" ? email : phone.number);
       } else {
-        showError(response.error?.message || 'Eroare la trimiterea email-ului');
+        showError(response.error?.message || "Eroare la trimiterea email-ului");
       }
-    } catch (error: any) {
-      showError(error.response?.data?.error?.message || 'A apărut o eroare la trimiterea email-ului');
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "A apărut o eroare la trimiterea email-ului";
+      showError(message);
     } finally {
       setIsLoading(false);
     }

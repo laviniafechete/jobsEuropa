@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
@@ -49,15 +49,7 @@ export default function AdminUsers() {
   const { showError } = useSnackbar();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!token) {
-      navigate('/admin/login');
-      return;
-    }
-    fetchUsers();
-  }, [token, navigate]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/users', {
         headers: {
@@ -77,7 +69,15 @@ export default function AdminUsers() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showError, token]);
+
+  useEffect(() => {
+    if (!token) {
+      navigate('/admin/login');
+      return;
+    }
+    fetchUsers();
+  }, [token, navigate, fetchUsers]);
 
   const filteredUsers = usersData?.users.filter(user => {
     const matchesSearch = searchTerm === '' || 

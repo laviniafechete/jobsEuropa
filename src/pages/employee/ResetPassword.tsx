@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { authAPI } from '../../services/api';
-import { useSnackbar } from '../../hooks/useSnackbar';
-import PhoneInput from '../../components/PhoneInput';
-import { getApiUrl } from '../../config/env';
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { authAPI } from "../../services/api";
+import { useSnackbar } from "../../hooks/useSnackbar";
+import PhoneInput from "../../components/PhoneInput";
+import { getApiUrl } from "../../config/env";
 
 const EmployeeResetPassword: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -30,11 +30,11 @@ const EmployeeResetPassword: React.FC = () => {
     if (token) {
       verifyToken();
     }
-  }, [token]);
+  }, [token, verifyToken]);
 
-  const verifyToken = async () => {
+  const verifyToken = useCallback(async () => {
     try {
-      const response = await fetch(`${getApiUrl('/auth/verify-reset-token/user')}/${token}`);
+      const response = await fetch(`${getApiUrl("/auth/verify-reset-token/user")}/${token}`);
       const data = await response.json();
       
       if (data.success) {
@@ -43,11 +43,11 @@ const EmployeeResetPassword: React.FC = () => {
         setIsTokenValid(false);
         showError('Token invalid sau expirat');
       }
-    } catch (error) {
+    } catch {
       setIsTokenValid(false);
       showError('Eroare la verificarea token-ului');
     }
-  };
+  }, [token, showError]);
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,10 +64,10 @@ const EmployeeResetPassword: React.FC = () => {
     
     setIsChangingPassword(true);
     try {
-      const response = await fetch(`${getApiUrl('/auth/change-password-with-token/user')}/${token}`, {
-        method: 'POST',
+      const response = await fetch(`${getApiUrl("/auth/change-password-with-token/user")}/${token}`, {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ newPassword }),
       });
@@ -85,8 +85,12 @@ const EmployeeResetPassword: React.FC = () => {
       } else {
         showError(data.error?.message || 'Eroare la schimbarea parolei');
       }
-    } catch (error: any) {
-      showError('A apărut o eroare la schimbarea parolei');
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'A apărut o eroare la schimbarea parolei';
+      showError(message);
     } finally {
       setIsChangingPassword(false);
     }
@@ -98,10 +102,10 @@ const EmployeeResetPassword: React.FC = () => {
     setIsLoading(true);
     try {
       let response;
-      if (method === 'email') {
-        response = await authAPI.resetPassword({ email, userType: 'user' });
+      if (method === "email") {
+        response = await authAPI.resetPassword({ email, userType: "user" });
       } else {
-        response = await authAPI.resetPassword({ phone: phone.prefix + phone.number, userType: 'user' });
+        response = await authAPI.resetPassword({ phone: phone.prefix + phone.number, userType: "user" });
       }
       if (response.success) {
         showSuccess('Instrucțiunile de resetare au fost trimise cu succes!');
@@ -110,8 +114,9 @@ const EmployeeResetPassword: React.FC = () => {
       } else {
         showError(response.error?.message || 'Eroare la trimitere');
       }
-    } catch (error: any) {
-      showError(error.response?.data?.error?.message || 'A apărut o eroare la trimitere');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'A apărut o eroare la trimitere';
+      showError(message);
     } finally {
       setIsLoading(false);
     }

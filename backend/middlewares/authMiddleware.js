@@ -3,6 +3,7 @@ import config from '../config.js';
 import { AuthenticationError, AuthorizationError } from '../utils/errorHandler.js';
 import User from '../models/User.js';
 import Employer from '../models/Employer.js';
+import Job from '../models/Job.js';
 
 // Generate JWT token
 export const generateToken = (payload) => {
@@ -39,16 +40,23 @@ export const protect = async (req, res, next) => {
     const decoded = verifyToken(token);
 
     // Get user from token
-    const user = await User.findOne({ userId: decoded.userId }).select('-password');
+    let user = await User.findOne({ userId: decoded.userId }).select('-password');
     if (user) {
+      // ensure req.user has _id for downstream usage
+      if (!user._id && user.id) {
+        user._id = user.id;
+      }
       req.user = user;
       req.userType = 'user';
       return next();
     }
 
     // Check if it's an employer
-    const employer = await Employer.findOne({ userId: decoded.userId }).select('-password');
+    let employer = await Employer.findOne({ userId: decoded.userId }).select('-password');
     if (employer) {
+      if (!employer._id && employer.id) {
+        employer._id = employer.id;
+      }
       req.user = employer;
       req.userType = 'employer';
       return next();
@@ -126,7 +134,7 @@ export const optionalAuth = async (req, res, next) => {
 };
 
 // Middleware pentru subscripție/trial angajator
-export const checkEmployerSubscription = (req, res, next) => {
+export const checkEmployerSubscription = async (req, res, next) => {
   if (req.userType !== 'employer') {
     return res.status(403).json({
       success: false,
@@ -137,6 +145,21 @@ export const checkEmployerSubscription = (req, res, next) => {
   const now = new Date();
   // Trial activ
   if (employer.trialEnd && now < new Date(employer.trialEnd)) {
+    try {
+      const trialJobLimit = 1;
+      const jobCount = await Job.countDocuments({ employer: employer._id });
+      if (jobCount >= trialJobLimit) {
+        return res.status(403).json({
+          success: false,
+          error: { message: 'Planul trial permite publicarea unui singur anunț. Activează un abonament pentru a publica mai multe joburi.' }
+        });
+      }
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        error: { message: 'Eroare la verificarea abonamentului.' }
+      });
+    }
     return next();
   }
   // Abonament activ

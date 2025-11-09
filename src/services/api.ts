@@ -13,7 +13,22 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('token');
+    let token: string | null = null;
+
+    const persisted = localStorage.getItem('auth-storage');
+    if (persisted) {
+      try {
+        const parsed = JSON.parse(persisted);
+        token = parsed?.state?.token ?? null;
+      } catch (error) {
+        console.warn('Failed to parse auth-storage', error);
+      }
+    }
+
+    if (!token) {
+      token = localStorage.getItem('token');
+    }
+
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -61,7 +76,7 @@ api.interceptors.response.use(
 );
 
 // Generic API response type
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message: string;
   data?: T;
@@ -120,6 +135,41 @@ export interface AuthResponse {
   user?: User;
   employer?: Employer;
   token: string;
+}
+
+export interface EmployerCompanyProfilePayload {
+  name?: string;
+  cui?: string;
+  location?: string;
+  domain?: string;
+  description?: string;
+  contactPerson?: string;
+  position?: string;
+  email?: string;
+  phone?: string;
+  website?: string;
+}
+
+export interface JobPayload {
+  title: string;
+  description: string;
+  requirements?: string;
+  location: string;
+  type: string;
+  experience: string;
+  category: string;
+  salary?: {
+    min?: number | null;
+    max?: number | null;
+    currency?: string;
+  };
+  skills?: string[];
+  benefits?: string[];
+  isActive?: boolean;
+}
+
+export interface StripeCheckoutResponse {
+  url: string;
 }
 
 // Auth API methods
@@ -200,60 +250,51 @@ export const cvAPI = {
 
 // Employer API methods
 export const employerAPI = {
-  // Save company profile
-  saveCompanyProfile: async (profileData: any): Promise<ApiResponse> => {
-    const response: AxiosResponse<ApiResponse> = await api.post('/employer/company-profile', profileData);
+  saveCompanyProfile: async (profileData: EmployerCompanyProfilePayload): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.post('/employers/save-profile', profileData);
     return response.data;
   },
 
-  // Get company profile
   getCompanyProfile: async (): Promise<ApiResponse> => {
-    const response: AxiosResponse<ApiResponse> = await api.get('/employer/company-profile');
+    const response: AxiosResponse<ApiResponse> = await api.get('/employers/profile');
     return response.data;
   },
 
-  // Post job
-  postJob: async (jobData: any): Promise<ApiResponse> => {
-    const response: AxiosResponse<ApiResponse> = await api.post('/employer/post-job', jobData);
+  postJob: async (jobData: JobPayload): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.post('/jobs', jobData);
     return response.data;
   },
 
-  // Get jobs
   getJobs: async (): Promise<ApiResponse> => {
-    const response: AxiosResponse<ApiResponse> = await api.get('/employer/jobs');
+    const response: AxiosResponse<ApiResponse> = await api.get('/jobs/employer/my-jobs');
     return response.data;
   },
 
-  // Get employees
   getEmployees: async (): Promise<ApiResponse> => {
-    const response: AxiosResponse<ApiResponse> = await api.get('/employer/employees');
+    const response: AxiosResponse<ApiResponse> = await api.get('/users');
     return response.data;
   },
 
-  // Stripe: inițiere sesiune checkout
-  createStripeCheckoutSession: async (priceId: string): Promise<{ url: string }> => {
-    const response = await api.post('/employer/stripe/create-checkout-session', { priceId });
+  createStripeCheckoutSession: async (priceId: string): Promise<StripeCheckoutResponse> => {
+    const response: AxiosResponse<StripeCheckoutResponse> = await api.post('/employers/stripe/create-checkout-session', { priceId });
     return response.data;
   },
 };
 
 // User API methods
 export const userAPI = {
-  // Get user info
   getUserInfo: async (): Promise<ApiResponse<User>> => {
-    const response: AxiosResponse<ApiResponse<User>> = await api.get('/user/info');
+    const response: AxiosResponse<ApiResponse<User>> = await api.get('/users/info');
     return response.data;
   },
 
-  // Update applied jobs
   updateAppliedJobs: async (jobId: string, action: 'apply' | 'remove'): Promise<ApiResponse> => {
-    const response: AxiosResponse<ApiResponse> = await api.put('/user/applied-jobs', { jobId, action });
+    const response: AxiosResponse<ApiResponse> = await api.put('/users/applied-jobs', { jobId, action });
     return response.data;
   },
 
-  // Get applied jobs
   getAppliedJobs: async (): Promise<ApiResponse> => {
-    const response: AxiosResponse<ApiResponse> = await api.get('/user/applied-jobs');
+    const response: AxiosResponse<ApiResponse> = await api.get('/users/applied-jobs');
     return response.data;
   },
 };

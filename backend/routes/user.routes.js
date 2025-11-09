@@ -2,7 +2,7 @@ import express from "express";
 import { updateHasCompletedCv } from "../controllers/updateUserCvStatus.js";
 import { getUserInfo } from "../controllers/getUserInfo.js";
 import { sendApplicationEmail } from "../controllers/sendEmail.js";
-import { updateAppliedJobs } from "../controllers/updateAppliedJobs.js";
+import { updateAppliedJobs, getAppliedJobs } from "../controllers/updateAppliedJobs.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
 import User from "../models/User.js";
 import { protectEmployer, checkEmployerSubscription } from "../middlewares/authMiddleware.js";
@@ -12,10 +12,13 @@ const router = express.Router();
 
 // Protected routes - only authenticated users can access
 router.patch("/update-cv-status", authMiddleware, updateHasCompletedCv);
+router.patch("/cv-status", authMiddleware, updateHasCompletedCv);
 router.get("/get-user-info", authMiddleware, getUserInfo);
+router.get("/info", authMiddleware, getUserInfo);
 router.get("/me", authMiddleware, getUserInfo); // Add this route for frontend compatibility
 router.post("/send-application", authMiddleware, sendApplicationEmail);
-router.post("/update-applied-jobs", authMiddleware, updateAppliedJobs);
+router.put("/applied-jobs", authMiddleware, updateAppliedJobs);
+router.get("/applied-jobs", authMiddleware, getAppliedJobs);
 
 // List all users (for employer)
 router.get("/", protectEmployer, checkEmployerSubscription, async (req, res) => {

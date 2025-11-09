@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Briefcase, Upload, Edit } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { Briefcase, Edit } from "lucide-react";
 import { useAuthStore } from "../../stores/authStore";
 import { useEmployer } from "../../context/EmployerContext";
 import JobAdCard from "./JobAdCard";
@@ -8,12 +7,38 @@ import { API_BASE_URL } from "../../config/env";
 import EditJobAdModal from "./EditJobAdModal";
 import { useSnackbar } from "../../hooks/useSnackbar";
 import { employerAPI } from "../../services/api";
+import type { JobAd } from "../../context/EmployerContext";
+
+type EmployerJob = JobAd & {
+  _id?: string;
+  promoted?: boolean;
+};
+
+type JobsApiResponse = {
+  success: boolean;
+  data: {
+    jobs: EmployerJob[];
+  };
+  error?: {
+    message?: string;
+  };
+};
+
+const normalizeJob = (job: EmployerJob): EmployerJob => ({
+  ...job,
+  id:
+    job.id ||
+    job._id ||
+    (typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `job-${Date.now()}`),
+});
+
+const getJobId = (job: EmployerJob): string => job._id || job.id;
 
 export default function PostJobForm() {
   const { employer, token } = useAuthStore();
   const { updateJobAd } = useEmployer();
-  console.log('PostJobForm - updateJobAd function:', typeof updateJobAd);
-  const navigate = useNavigate();
   const { showSuccess, showError } = useSnackbar();
   const [form, setForm] = useState({
     title: "",
@@ -28,7 +53,7 @@ export default function PostJobForm() {
   const [editAd, setEditAd] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [jobAds, setJobAds] = useState<any[]>([]);
+  const [jobAds, setJobAds] = useState<EmployerJob[]>([]);
   const [skills, setSkills] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
   const [benefits, setBenefits] = useState<string[]>([]);
@@ -36,35 +61,35 @@ export default function PostJobForm() {
   const [salary, setSalary] = useState({ min: "", max: "", currency: "RON" });
   const [experience, setExperience] = useState("entry");
 
+  const sortedJobAds = useMemo(() => [...jobAds].reverse(), [jobAds]);
+
+  const editableAd = useMemo(
+    () => jobAds.find((job) => editAd && getJobId(job) === editAd),
+    [jobAds, editAd]
+  );
+
   useEffect(() => {
     if (!token) return;
     const fetchJobs = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/jobs/employer/my-jobs`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Fetched jobs:', data.data.jobs);
-          console.log('Jobs structure:', data.data.jobs?.map((job: any) => ({
-            _id: job._id,
-            id: job.id,
-            title: job.title,
-            type: job.type
-          })));
-          setJobAds(data.data.jobs || []);
+        if (!response.ok) {
+          return;
         }
-      } catch (e) { 
-        console.error('Error fetching jobs:', e);
+        const data: JobsApiResponse = await response.json();
+        const jobs = Array.isArray(data.data?.jobs) ? data.data.jobs : [];
+        setJobAds(jobs.map(normalizeJob));
+      } catch (e) {
+        console.error("Error fetching jobs:", e);
       }
     };
     fetchJobs();
   }, [token]);
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -76,61 +101,64 @@ export default function PostJobForm() {
       setSkillInput("");
     }
   };
-  const handleSkillRemove = (s: string) => setSkills(skills.filter(x => x !== s));
+  const handleSkillRemove = (s: string) => setSkills(skills.filter((x) => x !== s));
   const handleBenefitAdd = () => {
     if (benefitInput.trim() && !benefits.includes(benefitInput.trim())) {
       setBenefits([...benefits, benefitInput.trim()]);
       setBenefitInput("");
     }
   };
-  const handleBenefitRemove = (b: string) => setBenefits(benefits.filter(x => x !== b));
+  const handleBenefitRemove = (b: string) => setBenefits(benefits.filter((x) => x !== b));
 
   const handlePromoteJob = async (jobId: string) => {
     try {
       // Verific dacă are abonament de promovare activ
-      const hasPromotionActive = employer && (
-        employer.subscriptionType === 'promotion' && 
-        employer.subscriptionEnd && 
-        new Date(employer.subscriptionEnd) > new Date()
-      );
+      const hasPromotionActive =
+        employer &&
+        employer.subscriptionType === "promotion" &&
+        employer.subscriptionEnd &&
+        new Date(employer.subscriptionEnd) > new Date();
 
       if (!hasPromotionActive) {
         // Redirecționez către plată pentru "Promovare"
         try {
-          const { url } = await employerAPI.createStripeCheckoutSession('price_1O8tq8vo26lc0v3ocmjctl8gact4gnfk1_promotion_test');
+          const { url } = await employerAPI.createStripeCheckoutSession(
+            "price_1O8tq8vo26lc0v3ocmjctl8gact4gnfk1_promotion_test"
+          );
           window.location.href = url;
           return;
         } catch (err) {
-          console.error('Error redirecting to promotion payment:', err);
-          showError('Eroare la redirecționarea către plată pentru promovare. Încearcă din nou.');
+          console.error("Error redirecting to promotion payment:", err);
+          showError("Eroare la redirecționarea către plată pentru promovare. Încearcă din nou.");
           return;
         }
       }
 
       // Dacă are promovare activă, aplică promovarea
       const response = await fetch(`${API_BASE_URL}/jobs/${jobId}/promote`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (response.ok) {
-        showSuccess('Job promovat cu succes!');
+        showSuccess("Job promovat cu succes!");
         // Refresh lista de joburi
         const jobsResponse = await fetch(`${API_BASE_URL}/jobs/employer/my-jobs`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
         if (jobsResponse.ok) {
-          const data = await jobsResponse.json();
-          setJobAds(data.data.jobs || []);
+          const data: JobsApiResponse = await jobsResponse.json();
+          const jobs = Array.isArray(data.data?.jobs) ? data.data.jobs : [];
+          setJobAds(jobs.map(normalizeJob));
         }
       } else {
-        showError('Eroare la promovarea job-ului');
+        showError("Eroare la promovarea job-ului");
       }
     } catch (error) {
-      console.error('Error promoting job:', error);
-      showError('Eroare la promovarea job-ului');
+      console.error("Error promoting job:", error);
+      showError("Eroare la promovarea job-ului");
     }
   };
 
@@ -138,23 +166,23 @@ export default function PostJobForm() {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
-    
+
     if (!token) {
       setError("Nu ești autentificat");
       showError("Nu ești autentificat");
       setIsSubmitting(false);
       return;
     }
-    
+
     try {
       const typeMap: Record<string, string> = {
         "Full-time": "full-time",
         "Part-time": "part-time",
-        "Ocazional": "contract",
-        "Proiect": "contract",
-        "Sezonier": "contract"
+        Ocazional: "contract",
+        Proiect: "contract",
+        Sezonier: "contract",
       };
-      
+
       // Map frontend fields to backend fields
       const jobData = {
         title: form.title,
@@ -166,52 +194,56 @@ export default function PostJobForm() {
         salary: {
           min: Number(salary.min) || undefined,
           max: Number(salary.max) || undefined,
-          currency: salary.currency || "RON"
+          currency: salary.currency || "RON",
         },
         experience,
         skills,
-        benefits
+        benefits,
       };
 
       // Verific dacă are abonament activ pentru a posta joburi
-      const hasActiveSubscription = employer && (
-        (employer.trialEnd && new Date(employer.trialEnd) > new Date()) || 
-        employer.subscriptionActive ||
-        (employer.subscriptionType === 'single' && employer.subscriptionEnd && new Date(employer.subscriptionEnd) > new Date())
-      );
+      const hasActiveSubscription =
+        employer &&
+        ((employer.trialEnd && new Date(employer.trialEnd) > new Date()) ||
+          employer.subscriptionActive ||
+          (employer.subscriptionType === "single" &&
+            employer.subscriptionEnd &&
+            new Date(employer.subscriptionEnd) > new Date()));
 
       if (!hasActiveSubscription) {
         // Redirecționez către plată pentru "Anunț Unic"
         try {
-          const { url } = await employerAPI.createStripeCheckoutSession('price_1O8tq8vo26lc0v3ocmjctl8gact4gnfk1_single_test');
+          const { url } = await employerAPI.createStripeCheckoutSession(
+            "price_1O8tq8vo26lc0v3ocmjctl8gact4gnfk1_single_test"
+          );
           window.location.href = url;
           return;
         } catch (err) {
-          console.error('Error redirecting to payment:', err);
-          showError('Eroare la redirecționarea către plată. Încearcă din nou.');
+          console.error("Error redirecting to payment:", err);
+          showError("Eroare la redirecționarea către plată. Încearcă din nou.");
           setIsSubmitting(false);
           return;
         }
       }
 
       const response = await fetch(`${API_BASE_URL}/jobs`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(jobData)
+        body: JSON.stringify(jobData),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        showError(errorData.error?.message || 'Eroare la crearea job-ului');
-        throw new Error(errorData.error?.message || 'Eroare la crearea job-ului');
+        showError(errorData.error?.message || "Eroare la crearea job-ului");
+        throw new Error(errorData.error?.message || "Eroare la crearea job-ului");
       }
 
       const result = await response.json();
       // Adaug jobul nou în lista locală
-      setJobAds(prev => [...prev, result.data]);
+      setJobAds((prev) => [...prev, normalizeJob(result.data)]);
       // Reset form
       setForm({
         title: "",
@@ -229,10 +261,11 @@ export default function PostJobForm() {
       setExperience("entry");
       showSuccess("Job publicat cu succes!");
       // Nu mai fac redirect
-    } catch (error: any) {
-      console.error('Error submitting job:', error);
-      setError(error.message || 'Eroare la publicarea anunțului');
-      showError(error.message || 'Eroare la publicarea anunțului');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Eroare la publicarea anunțului";
+      console.error("Error submitting job:", error);
+      setError(message);
+      showError(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -255,7 +288,7 @@ export default function PostJobForm() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-8 mt-10 px-2 sm:px-4">
+    <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-8 mt-10 px-2 sm:px-4 mb-10">
       <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
         <Briefcase className="text-green-600" /> Postează anunț de angajare
       </h2>
@@ -309,19 +342,19 @@ export default function PostJobForm() {
             className="border rounded-lg px-4 py-2 w-1/3"
             placeholder="Salariu minim"
             value={salary.min}
-            onChange={e => setSalary(s => ({ ...s, min: e.target.value }))}
+            onChange={(e) => setSalary((s) => ({ ...s, min: e.target.value }))}
           />
           <input
             type="number"
             className="border rounded-lg px-4 py-2 w-1/3"
             placeholder="Salariu maxim"
             value={salary.max}
-            onChange={e => setSalary(s => ({ ...s, max: e.target.value }))}
+            onChange={(e) => setSalary((s) => ({ ...s, max: e.target.value }))}
           />
           <select
             className="border rounded-lg px-3 py-2 w-1/3"
             value={salary.currency}
-            onChange={e => setSalary(s => ({ ...s, currency: e.target.value }))}
+            onChange={(e) => setSalary((s) => ({ ...s, currency: e.target.value }))}
           >
             <option value="RON">RON</option>
             <option value="EUR">EUR</option>
@@ -339,7 +372,7 @@ export default function PostJobForm() {
         <select
           className="border rounded-lg px-3 py-2 w-full text-base focus:ring-2 focus:ring-green-500"
           value={experience}
-          onChange={e => setExperience(e.target.value)}
+          onChange={(e) => setExperience(e.target.value)}
         >
           <option value="entry">Fără experiență</option>
           <option value="junior">1–2 ani experiență într-un rol similar</option>
@@ -355,15 +388,36 @@ export default function PostJobForm() {
               className="border rounded-lg px-4 py-2 flex-1"
               placeholder="Adaugă competență"
               value={skillInput}
-              onChange={e => setSkillInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleSkillAdd(); } }}
+              onChange={(e) => setSkillInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSkillAdd();
+                }
+              }}
             />
-            <button type="button" onClick={handleSkillAdd} className="bg-green-500 text-white px-3 py-1 rounded">Adaugă</button>
+            <button
+              type="button"
+              onClick={handleSkillAdd}
+              className="bg-green-500 text-white px-3 py-1 rounded"
+            >
+              Adaugă
+            </button>
           </div>
           <div className="flex flex-wrap gap-2">
-            {skills.map(s => (
-              <span key={s} className="bg-green-200 text-green-800 px-2 py-1 rounded text-xs flex items-center gap-1">
-                {s} <button type="button" onClick={() => handleSkillRemove(s)} className="ml-1 text-red-500">×</button>
+            {skills.map((s) => (
+              <span
+                key={s}
+                className="bg-green-200 text-green-800 px-2 py-1 rounded text-xs flex items-center gap-1"
+              >
+                {s}{" "}
+                <button
+                  type="button"
+                  onClick={() => handleSkillRemove(s)}
+                  className="ml-1 text-red-500"
+                >
+                  ×
+                </button>
               </span>
             ))}
           </div>
@@ -376,15 +430,36 @@ export default function PostJobForm() {
               className="border rounded-lg px-4 py-2 flex-1"
               placeholder="Adaugă beneficiu"
               value={benefitInput}
-              onChange={e => setBenefitInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleBenefitAdd(); } }}
+              onChange={(e) => setBenefitInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleBenefitAdd();
+                }
+              }}
             />
-            <button type="button" onClick={handleBenefitAdd} className="bg-green-500 text-white px-3 py-1 rounded">Adaugă</button>
+            <button
+              type="button"
+              onClick={handleBenefitAdd}
+              className="bg-green-500 text-white px-3 py-1 rounded"
+            >
+              Adaugă
+            </button>
           </div>
           <div className="flex flex-wrap gap-2">
-            {benefits.map(b => (
-              <span key={b} className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs flex items-center gap-1">
-                {b} <button type="button" onClick={() => handleBenefitRemove(b)} className="ml-1 text-red-500">×</button>
+            {benefits.map((b) => (
+              <span
+                key={b}
+                className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs flex items-center gap-1"
+              >
+                {b}{" "}
+                <button
+                  type="button"
+                  onClick={() => handleBenefitRemove(b)}
+                  className="ml-1 text-red-500"
+                >
+                  ×
+                </button>
               </span>
             ))}
           </div>
@@ -401,7 +476,7 @@ export default function PostJobForm() {
           disabled={isSubmitting}
           className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-semibold py-2 rounded-lg transition flex items-center justify-center"
         >
-          {isSubmitting ? 'Se publică...' : 'Publică anunțul'}
+          {isSubmitting ? "Se publică..." : "Publică anunțul"}
         </button>
       </form>
       {/* Lista anunțuri publicate */}
@@ -411,52 +486,24 @@ export default function PostJobForm() {
         </h3>
         <div className="flex flex-col gap-6">
           {jobAds.length === 0 && (
-            <div className="text-gray-500 text-center">
-              Nu ai publicat niciun anunț încă.
-            </div>
+            <div className="text-gray-500 text-center">Nu ai publicat niciun anunț încă.</div>
           )}
-          {jobAds.slice().reverse().map((ad: any) => (
-            <JobAdCard key={ad._id || ad.id} ad={ad} onEdit={() => {
-              console.log('Edit clicked for job:', ad);
-              console.log('Job _id:', ad._id);
-              console.log('Job id:', ad.id);
-              const jobId = ad._id || ad.id;
-              console.log('Setting editAd to:', jobId);
-              setEditAd(jobId);
-            }} onPromote={() => handlePromoteJob(ad._id || ad.id)} />
-          ))}
+          {sortedJobAds.map((ad) => {
+            const jobId = getJobId(ad);
+            return (
+              <JobAdCard
+                key={jobId}
+                ad={ad}
+                onEdit={() => setEditAd(jobId)}
+                onPromote={() => handlePromoteJob(jobId)}
+              />
+            );
+          })}
         </div>
       </div>
       <EditJobAdModal
-        ad={(() => {
-          console.log('All jobAds:', jobAds);
-          console.log('editAd value:', editAd);
-          
-          if (!editAd || jobAds.length === 0) {
-            console.log('No editAd or no jobAds available');
-            return undefined;
-          }
-          
-          const foundAd = jobAds.find((a: any) => {
-            console.log('Checking job:', a);
-            console.log('Job _id:', a._id);
-            console.log('Job id:', a.id);
-            console.log('editAd:', editAd);
-            const jobId = a._id || a.id;
-            const matches = jobId === editAd;
-            console.log('Job ID matches editAd:', matches);
-            return matches;
-          });
-          
-          if (!foundAd) {
-            console.log('No job found with ID:', editAd);
-            console.log('Available job IDs:', jobAds.map((a: any) => a._id || a.id));
-          }
-          
-          console.log('Found ad for edit:', foundAd);
-          return foundAd;
-        })()}
-        open={!!editAd}
+        ad={editableAd}
+        open={Boolean(editAd)}
         onClose={() => setEditAd(null)}
         updateJobAd={updateJobAd}
       />

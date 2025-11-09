@@ -11,7 +11,7 @@ const transporter = nodemailer.createTransport({
   secure: process.env.EMAIL_SECURE === "true",
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
+    pass: process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD,
   },
 });
 
@@ -145,6 +145,52 @@ export const sendJobApplicationNotification = async (employerEmail, jobTitle, ca
   } catch (error) {
     console.error("Eroare la trimiterea email-ului de notificare aplicare:", error);
     // Nu aruncăm eroarea pentru a nu afecta procesul de aplicare
+    return null;
+  }
+};
+
+// Send internal notification for job application (e.g., Jobs Europa team)
+export const sendInternalApplicationNotification = async (
+  jobTitle,
+  candidateName,
+  candidateContact,
+  jobLocation,
+  recipient = 'contact@jobs-europa.com'
+) => {
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #2563eb;">Jobs Europa - Aplicație Nouă (Copie Internă)</h2>
+      <p>A fost înregistrată o aplicație nouă pe platformă.</p>
+
+      <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="color: #333; margin-top: 0;">Detalii Job:</h3>
+        <p><strong>Poziție:</strong> ${jobTitle}</p>
+        <p><strong>Locație:</strong> ${jobLocation || 'Nespecificat'}</p>
+      </div>
+
+      <div style="background-color: #e8f4fd; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="color: #333; margin-top: 0;">Detalii Candidat:</h3>
+        <p><strong>Nume:</strong> ${candidateName}</p>
+        <p><strong>Contact:</strong> ${candidateContact}</p>
+        <p><strong>Data aplicării:</strong> ${new Date().toLocaleString('ro-RO')}</p>
+      </div>
+
+      <p>Acesta este un mesaj automat transmis echipei Jobs Europa.</p>
+    </div>
+  `;
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"Jobs Europa" <${process.env.EMAIL_USER}>`,
+      to: recipient,
+      subject: `Aplicație nouă înregistrată: ${jobTitle}`,
+      html,
+    });
+
+    console.log('Email intern aplicație trimis către:', recipient);
+    return info;
+  } catch (error) {
+    console.error('Eroare la trimiterea email-ului intern de aplicație:', error);
     return null;
   }
 };

@@ -1,53 +1,59 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useSearchParams, Link, useNavigate } from 'react-router-dom';
-import { authAPI } from '../../services/api';
-import { useSnackbar } from '../../hooks/useSnackbar';
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { authAPI } from "../../services/api";
+import { useSnackbar } from "../../hooks/useSnackbar";
 
 const EmployerVerifyEmail: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { showSuccess, showError } = useSnackbar();
   
-  const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
-  const [message, setMessage] = useState('Se verifică email-ul tău...');
+  const [status, setStatus] = useState<"verifying" | "success" | "error">("verifying");
+  const [message, setMessage] = useState("Se verifică email-ul tău...");
   const hasVerifiedRef = useRef(false);
 
-  useEffect(() => {
-    const verifyEmail = async () => {
-      const token = searchParams.get('token');
-      
-      if (!token) {
-        setStatus('error');
-        setMessage('Token invalid sau lipsă');
-        showError('Token invalid sau lipsă');
-        return;
-      }
+  const verifyEmail = useCallback(async () => {
+    const token = searchParams.get("token");
 
-      if (hasVerifiedRef.current) return; // Prevent multiple verifications
-      hasVerifiedRef.current = true;
+    if (!token) {
+      const missingTokenMessage = "Token invalid sau lipsă";
+      setStatus("error");
+      setMessage(missingTokenMessage);
+      showError(missingTokenMessage);
+      return;
+    }
 
-      try {
-        const response = await authAPI.verifyEmail('employer', token);
-        
-        if (response.success) {
-          setStatus('success');
-          setMessage('Email verificat cu succes! Poți să te autentifici acum.');
-          showSuccess('Email verificat cu succes!');
-        } else {
-          setStatus('error');
-          setMessage(response.error?.message || 'Token invalid sau expirat');
-          showError(response.error?.message || 'Token invalid sau expirat');
-        }
-      } catch (error: any) {
-        setStatus('error');
-        const errorMessage = error.response?.data?.error?.message || 'A apărut o eroare la verificarea email-ului';
+    if (hasVerifiedRef.current) return;
+    hasVerifiedRef.current = true;
+
+    try {
+      const response = await authAPI.verifyEmail("employer", token);
+
+      if (response.success) {
+        const successMessage = "Email verificat cu succes! Poți să te autentifici acum.";
+        setStatus("success");
+        setMessage(successMessage);
+        showSuccess(successMessage);
+      } else {
+        const errorMessage = response.error?.message || "Token invalid sau expirat";
+        setStatus("error");
         setMessage(errorMessage);
         showError(errorMessage);
       }
-    };
+    } catch (error) {
+      setStatus("error");
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "A apărut o eroare la verificarea email-ului";
+      setMessage(errorMessage);
+      showError(errorMessage);
+    }
+  }, [searchParams, showError, showSuccess]);
 
+  useEffect(() => {
     verifyEmail();
-  }, [searchParams]); // Remove showSuccess and showError from dependencies
+  }, [verifyEmail]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center px-4">

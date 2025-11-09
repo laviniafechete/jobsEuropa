@@ -1,31 +1,103 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useEmployer } from "../../context/EmployerContext";
-import { useAuthStore } from "../../stores/authStore";
-import { X, Briefcase, Upload } from "lucide-react";
+import { X, Briefcase } from "lucide-react";
 import type { JobAd } from "../../context/EmployerContext";
 
-type Props = {
+type JobFormState = {
+  title: string;
+  requirements: string;
+  location: string;
+  type: string;
+  salary: string;
+  domain: string;
+  image: string;
+};
+
+type EditJobAdModalProps = {
   ad?: JobAd;
   open: boolean;
   onClose: () => void;
-  updateJobAd?: (ad: JobAd) => Promise<any>;
+  updateJobAd?: (ad: JobAd) => Promise<unknown>;
 };
 
-export default function EditJobAdModal({ ad, open, onClose, updateJobAd: propUpdateJobAd }: Props) {
+const DEFAULT_FORM_STATE: JobFormState = {
+  title: "",
+  requirements: "",
+  location: "",
+  type: "",
+  salary: "",
+  domain: "",
+  image: ""
+};
+
+const normalizeJobType = (type?: string): string => {
+  if (!type) return "";
+  const normalized = type.toLowerCase().replace(/\s|-/g, "");
+  switch (normalized) {
+    case "fulltime":
+      return "Full-time";
+    case "parttime":
+      return "Part-time";
+    case "contract":
+      return "Proiect";
+    case "internship":
+    case "ocazional":
+      return "Ocazional";
+    case "seasonal":
+    case "sezonier":
+      return "Sezonier";
+    default:
+      return type;
+  }
+};
+
+const formatSalary = (salary: JobAd["salary"]): string => {
+  if (!salary) return "";
+  if (typeof salary === "string") return salary;
+  const { min, max, currency } = salary;
+  const curr = currency || "RON";
+  if (min && max) {
+    return `${min}-${max} ${curr}`;
+  }
+  if (min) {
+    return `${min} ${curr}`;
+  }
+  if (max) {
+    return `până la ${max} ${curr}`;
+  }
+  return "";
+};
+
+const toJobTypeValue = (displayType: string): string => {
+  switch (displayType) {
+    case "Full-time":
+      return "full-time";
+    case "Part-time":
+      return "part-time";
+    case "Ocazional":
+      return "internship";
+    case "Proiect":
+      return "contract";
+    case "Sezonier":
+      return "seasonal";
+    default:
+      return displayType;
+  }
+};
+
+export default function EditJobAdModal({
+  ad,
+  open,
+  onClose,
+  updateJobAd: propUpdateJobAd
+}: EditJobAdModalProps) {
   const { updateJobAd: contextUpdateJobAd } = useEmployer();
-  const { token } = useAuthStore();
-  
-  // Use prop function if provided, otherwise use context function
-  const updateJobAd = propUpdateJobAd || contextUpdateJobAd;
-  const [form, setForm] = useState({
-    title: "",
-    requirements: "",
-    location: "",
-    type: "",
-    salary: "",
-    domain: "",
-    image: "",
-  });
+  const updateJobAd = useMemo(
+    () => propUpdateJobAd || contextUpdateJobAd,
+    [propUpdateJobAd, contextUpdateJobAd]
+  );
+
+  const [form, setForm] = useState<JobFormState>(DEFAULT_FORM_STATE);
   const [imgPreview, setImgPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,58 +108,28 @@ export default function EditJobAdModal({ ad, open, onClose, updateJobAd: propUpd
   const [experience, setExperience] = useState("entry");
 
   useEffect(() => {
-    console.log('EditJobAdModal received ad:', ad);
-    if (ad) {
-      console.log('Ad type from backend:', ad.type);
-      console.log('Ad type category:', ad.category);
-      
-      // Parse salary correctly
-      let salaryDisplay = '';
-      if (typeof ad.salary === 'string') {
-        salaryDisplay = ad.salary;
-      } else if (ad.salary && typeof ad.salary === 'object') {
-        if (ad.salary.min && ad.salary.max) {
-          salaryDisplay = `${ad.salary.min}-${ad.salary.max} ${ad.salary.currency || 'RON'}`;
-        } else if (ad.salary.min) {
-          salaryDisplay = `${ad.salary.min} ${ad.salary.currency || 'RON'}`;
-        } else if (ad.salary.max) {
-          salaryDisplay = `până la ${ad.salary.max} ${ad.salary.currency || 'RON'}`;
-        }
-      }
-
-      // Map type correctly from backend to frontend
-      let mappedType = ad.type || "";
-      console.log('Original type:', mappedType);
-      console.log('Type length:', mappedType.length);
-      console.log('Type char codes:', mappedType.split('').map(c => c.charCodeAt(0)));
-      
-      if (mappedType === 'fulltime') mappedType = 'Full-time';
-      else if (mappedType === 'parttime') mappedType = 'Part-time';
-      else if (mappedType === 'contract') mappedType = 'Proiect';
-      else if (mappedType === 'internship') mappedType = 'Ocazional';
-      else if (mappedType === 'seasonal') mappedType = 'Sezonier';
-      else if (mappedType === 'full-time') mappedType = 'Full-time';
-      else if (mappedType === 'part-time') mappedType = 'Part-time';
-      else if (mappedType === 'proiect') mappedType = 'Proiect';
-      else if (mappedType === 'ocazional') mappedType = 'Ocazional';
-      else if (mappedType === 'sezonier') mappedType = 'Sezonier';
-      
-      console.log('Mapped type:', mappedType);
-
-      setForm({
-        title: ad.title || "",
-        requirements: ad.requirements || ad.description || "",
-        location: ad.location || "",
-        type: mappedType,
-        salary: salaryDisplay,
-        domain: ad.domain || ad.category || "",
-        image: ad.image || "",
-      });
-      setImgPreview(ad.image || null);
-      setSkills(ad.skills || []);
-      setBenefits(ad.benefits || []);
-      setExperience(ad.experience || "entry");
+    if (!ad) {
+      setForm(DEFAULT_FORM_STATE);
+      setImgPreview(null);
+      setSkills([]);
+      setBenefits([]);
+      setExperience("entry");
+      return;
     }
+
+    setForm({
+      title: ad.title || "",
+      requirements: ad.requirements || ad.description || "",
+      location: ad.location || "",
+      type: normalizeJobType(ad.type),
+      salary: formatSalary(ad.salary),
+      domain: ad.domain || ad.category || "",
+      image: ad.image || ""
+    });
+    setImgPreview(ad.image || null);
+    setSkills(ad.skills || []);
+    setBenefits(ad.benefits || []);
+    setExperience(ad.experience || "entry");
   }, [ad]);
 
   if (!open || !ad) return null;
@@ -118,46 +160,42 @@ export default function EditJobAdModal({ ad, open, onClose, updateJobAd: propUpd
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('=== HANDLE SUBMIT START ===');
-    console.log('Ad object:', ad);
-    console.log('Ad ID:', ad?.id);
-    console.log('Form data:', form);
-    console.log('Skills:', skills);
-    console.log('Benefits:', benefits);
-    console.log('Experience:', experience);
-    console.log('Token from useAuthStore:', token ? 'exists' : 'missing');
-    console.log('updateJobAd function:', typeof updateJobAd);
-    
+
     if (!ad?.id) {
-      setError('ID-ul job-ului nu a fost găsit');
+      setError("ID-ul job-ului nu a fost găsit");
       return;
     }
-    
+
+    if (!updateJobAd) {
+      setError("Funcția de actualizare nu este disponibilă");
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
-    
+
     try {
-      console.log('About to call updateJobAd with:', { 
-        ...form, 
+      await updateJobAd({
         id: ad.id,
+        title: form.title,
+        requirements: form.requirements,
+        description: form.requirements,
+        location: form.location,
+        type: toJobTypeValue(form.type),
+        salary: form.salary,
+        domain: form.domain,
+        category: form.domain,
+        experience,
         skills,
         benefits,
-        experience
+        image: form.image
       });
-      
-      const result = await updateJobAd({ 
-        ...form, 
-        id: ad.id,
-        skills,
-        benefits,
-        experience
-      });
-      
-      console.log('updateJobAd completed successfully:', result);
+
       onClose();
-    } catch (err: any) {
-      console.error('Error in handleSubmit:', err);
-      setError(err.message || 'Eroare la actualizarea job-ului');
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Eroare la actualizarea job-ului";
+      setError(message);
     } finally {
       setIsSubmitting(false);
     }

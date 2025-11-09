@@ -1,7 +1,6 @@
-import { useEffect, useState, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../stores/authStore";
-import { useSnackbar } from "../../hooks/useSnackbar";
 import { Briefcase, MapPin, CheckCircle } from "lucide-react";
 import { API_BASE_URL } from "../../config/env";
 
@@ -32,13 +31,14 @@ export default function EmployeeHome() {
   const [loading, setLoading] = useState(false);
   const fetchedTokenRef = useRef<string | null>(null);
 
-  // Fetch applied jobs
-  const fetchAppliedJobs = async () => {
-    if (!token) return;
-    
+  const fetchAppliedJobs = useCallback(async () => {
+    if (!token) {
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/users/me`, {
+      const response = await fetch(`${API_BASE_URL}/users/applied-jobs`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -46,8 +46,8 @@ export default function EmployeeHome() {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.data.appliedJobs) {
-          setAppliedJobs(data.data.appliedJobs); // Show all applied jobs
+        if (Array.isArray(data.data?.appliedJobs)) {
+          setAppliedJobs(data.data.appliedJobs);
         }
       }
     } catch (error) {
@@ -55,7 +55,7 @@ export default function EmployeeHome() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     if (!user || !token) return;
@@ -73,7 +73,7 @@ export default function EmployeeHome() {
 
     // Fetch applied jobs
     fetchAppliedJobs();
-  }, [user, token]);
+  }, [user, token, fetchAppliedJobs]);
 
   const handleCompleteCV = () => {
     setShowCVModal(false);

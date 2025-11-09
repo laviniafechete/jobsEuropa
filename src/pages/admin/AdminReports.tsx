@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useAdminStore } from '../../stores/adminStore';
 import { useSnackbar } from '../../hooks/useSnackbar';
+import { API_BASE_URL } from '../../config/env';
 
 interface ReportData {
   overview: {
@@ -49,6 +50,18 @@ interface ReportData {
     jobPostings: Array<{ month: string; count: number }>;
     applications: Array<{ month: string; count: number }>;
   };
+}
+
+interface DashboardJob {
+  status?: string;
+  applications?: Array<{ appliedAt?: string }>;
+  category?: string;
+  salary?: { min?: number | null; max?: number | null };
+  views?: number;
+}
+
+interface DashboardUser {
+  location?: string;
 }
 
 const StatCard: React.FC<{
@@ -119,24 +132,22 @@ export default function AdminReports() {
   const { showError, showSuccess } = useSnackbar();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!token) {
-      navigate('/admin/login');
-      return;
-    }
-    fetchReportData();
-  }, [token, selectedPeriod]);
-
   const fetchReportData = useCallback(async () => {
     try {
       setRefreshing(true);
-      
-      // Fetch all necessary data in parallel
+
+      if (!token) {
+        navigate('/admin/login');
+        return;
+      }
+
+      const authHeaders = { Authorization: `Bearer ${token}` };
+
       const [dashboardRes, usersRes, employersRes, jobsRes] = await Promise.all([
-        fetch('/api/admin/dashboard', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('/api/admin/employers', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('/api/jobs')
+        fetch(`${API_BASE_URL}/admin/dashboard`, { headers: authHeaders }),
+        fetch(`${API_BASE_URL}/admin/users`, { headers: authHeaders }),
+        fetch(`${API_BASE_URL}/admin/employers`, { headers: authHeaders }),
+        fetch(`${API_BASE_URL}/jobs`)
       ]);
 
       const [dashboardData, usersData, employersData, jobsData] = await Promise.all([
@@ -146,24 +157,28 @@ export default function AdminReports() {
         jobsRes.json()
       ]);
 
-      // Handle different response formats
-      const jobs = jobsData.success && jobsData.data ? jobsData.data.jobs : (Array.isArray(jobsData) ? jobsData : []);
-      const allRequestsOk = dashboardData.success && usersData.success && employersData.success && jobs;
+      const jobsPayload = jobsData.success && jobsData.data ? jobsData.data.jobs : jobsData;
+      const jobs: DashboardJob[] = Array.isArray(jobsPayload) ? (jobsPayload as DashboardJob[]) : [];
 
-      if (allRequestsOk) {
-        // Process and combine data for comprehensive reports
-        const users = usersData.users || [];
-        const employers = employersData.employers || [];
+      const usersPayload = usersData?.data?.users ?? usersData?.users ?? [];
+      const users: DashboardUser[] = Array.isArray(usersPayload) ? (usersPayload as DashboardUser[]) : [];
 
-        // Calculate advanced analytics
-        const totalApplications = jobs.reduce((sum: number, job: any) => sum + (job.applications?.length || 0), 0);
+      const analytics = dashboardData?.analytics ?? null;
+      const hasValidAnalytics = Boolean(
+        dashboardData?.success &&
+        usersData?.success &&
+        employersData?.success &&
+        analytics
+      );
+
+      if (hasValidAnalytics) {
+        const totalApplications = jobs.reduce((sum: number, job) => sum + (job.applications?.length || 0), 0);
         const averageApplicationsPerJob = jobs.length > 0 ? Number((totalApplications / jobs.length).toFixed(1)) : 0;
-        const activeJobs = jobs.filter((job: any) => job.status === 'active').length;
+        const activeJobs = jobs.filter((job) => job.status === 'active').length;
         const activeJobsPercentage = jobs.length > 0 ? Number(((activeJobs / jobs.length) * 100).toFixed(1)) : 0;
 
-        // Top locations from users
-        const locationCount: { [key: string]: number } = {};
-        users.forEach((user: any) => {
+        const locationCount: Record<string, number> = {};
+        users.forEach((user) => {
           if (user.location) {
             locationCount[user.location] = (locationCount[user.location] || 0) + 1;
           }
@@ -172,9 +187,8 @@ export default function AdminReports() {
           .map(([location, count]) => ({ location, count }))
           .sort((a, b) => b.count - a.count);
 
-        // Top categories from jobs
-        const categoryCount: { [key: string]: number } = {};
-        jobs.forEach((job: any) => {
+        const categoryCount: Record<string, number> = {};
+        jobs.forEach((job) => {
           if (job.category) {
             categoryCount[job.category] = (categoryCount[job.category] || 0) + 1;
           }
@@ -183,8 +197,7 @@ export default function AdminReports() {
           .map(([category, count]) => ({ category, count }))
           .sort((a, b) => b.count - a.count);
 
-        // Salary ranges analysis
-        const salaryRanges: { [key: string]: number } = {
+        const salaryRanges: Record<string, number> = {
           'Sub 2000 RON': 0,
           '2000-3000 RON': 0,
           '3000-5000 RON': 0,
@@ -193,11 +206,14 @@ export default function AdminReports() {
           'Nesalarizat': 0
         };
 
-        jobs.forEach((job: any) => {
-          if (!job.salary || (!job.salary.min && !job.salary.max)) {
+        jobs.forEach((job) => {
+          if (!job.salary || (job.salary.min == null && job.salary.max == null)) {
             salaryRanges['Nesalarizat']++;
           } else {
-            const avgSalary = ((job.salary.min || 0) + (job.salary.max || 0)) / 2;
+            const min = job.salary.min ?? job.salary.max ?? 0;
+            const max = job.salary.max ?? job.salary.min ?? 0;
+            const avgSalary = (min + max) / 2;
+
             if (avgSalary < 2000) salaryRanges['Sub 2000 RON']++;
             else if (avgSalary < 3000) salaryRanges['2000-3000 RON']++;
             else if (avgSalary < 5000) salaryRanges['3000-5000 RON']++;
@@ -210,18 +226,25 @@ export default function AdminReports() {
           .map(([range, count]) => ({ range, count }))
           .sort((a, b) => b.count - a.count);
 
-        // Calculate conversion rate
-        const totalViews = jobs.reduce((sum: number, job: any) => sum + (job.views || 0), 0);
+        const totalViews = jobs.reduce((sum: number, job) => sum + (job.views || 0), 0);
         const applicationConversionRate = totalViews > 0 ? Number(((totalApplications / totalViews) * 100).toFixed(2)) : 0;
 
-        // Generate trend data (simplified for demo)
-        const generateTrendData = (baseCount: number, months: number = 6) => {
+        const periodToMonths: Record<string, number> = {
+          '7d': 1,
+          '30d': 6,
+          '90d': 9,
+          '1y': 12
+        };
+
+        const monthsWindow = periodToMonths[selectedPeriod] ?? 6;
+
+        const generateTrendData = (baseCount: number, months: number = monthsWindow) => {
           const trends = [];
           const now = new Date();
           for (let i = months - 1; i >= 0; i--) {
             const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
             const monthName = date.toLocaleDateString('ro-RO', { month: 'short', year: '2-digit' });
-            const variance = Math.random() * 0.4 - 0.2; // ±20% variance
+            const variance = Math.random() * 0.4 - 0.2;
             const count = Math.round(baseCount * (1 + variance));
             trends.push({ month: monthName, count: Math.max(0, count) });
           }
@@ -230,35 +253,35 @@ export default function AdminReports() {
 
         const processed: ReportData = {
           overview: {
-            totalUsers: dashboardData.analytics.overview.totalUsers,
-            totalEmployers: dashboardData.analytics.overview.totalEmployers,
-            totalJobs: dashboardData.analytics.overview.totalJobs,
+            totalUsers: analytics.overview?.totalUsers ?? 0,
+            totalEmployers: analytics.overview?.totalEmployers ?? 0,
+            totalJobs: analytics.overview?.totalJobs ?? 0,
             totalApplications,
             averageApplicationsPerJob,
             activeJobsPercentage
           },
           userAnalytics: {
-            registrationsThisMonth: dashboardData.analytics.thisMonth.users,
-            registrationsLastMonth: dashboardData.analytics.growth?.usersLastMonth || 0,
-            verifiedUsersPercentage: dashboardData.analytics.users.verificationRate,
+            registrationsThisMonth: analytics.thisMonth?.users ?? 0,
+            registrationsLastMonth: analytics.growth?.usersLastMonth ?? 0,
+            verifiedUsersPercentage: analytics.users?.verificationRate ?? 0,
             topLocations
           },
           employerAnalytics: {
-            newEmployersThisMonth: dashboardData.analytics.thisMonth.employers,
-            activeSubscriptions: dashboardData.analytics.employers.activeSubscriptions,
-            subscriptionRevenue: dashboardData.analytics.overview.estimatedMonthlyRevenue || 0,
+            newEmployersThisMonth: analytics.thisMonth?.employers ?? 0,
+            activeSubscriptions: analytics.employers?.activeSubscriptions ?? 0,
+            subscriptionRevenue: analytics.overview?.estimatedMonthlyRevenue ?? 0,
             topCategories
           },
           jobAnalytics: {
-            jobsPostedThisMonth: dashboardData.analytics.thisMonth.jobs,
+            jobsPostedThisMonth: analytics.thisMonth?.jobs ?? 0,
             averageJobViews: jobs.length > 0 ? Math.round(totalViews / jobs.length) : 0,
             topSalaryRanges,
             applicationConversionRate
           },
           trends: {
-            userRegistrations: generateTrendData(dashboardData.analytics.thisMonth.users),
-            jobPostings: generateTrendData(dashboardData.analytics.thisMonth.jobs),
-            applications: generateTrendData(Math.round(totalApplications / 6))
+            userRegistrations: generateTrendData(analytics.thisMonth?.users ?? 0),
+            jobPostings: generateTrendData(analytics.thisMonth?.jobs ?? 0),
+            applications: generateTrendData(Math.round(totalApplications / Math.max(monthsWindow, 1)))
           }
         };
 
@@ -273,7 +296,15 @@ export default function AdminReports() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [token, selectedPeriod, showError]);
+  }, [token, selectedPeriod, showError, navigate]);
+
+  useEffect(() => {
+    if (!token) {
+      navigate('/admin/login');
+      return;
+    }
+    fetchReportData();
+  }, [token, fetchReportData, navigate]);
 
   const handleExportReport = (format: 'pdf' | 'csv' | 'excel') => {
     // Simulate export functionality

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
@@ -92,15 +92,7 @@ export default function AdminDashboard() {
   const { showError } = useSnackbar();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!token) {
-      navigate('/admin/login');
-      return;
-    }
-    fetchAnalytics();
-  }, [token, navigate]);
-
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/dashboard', {
         headers: {
@@ -120,7 +112,15 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showError, token]);
+
+  useEffect(() => {
+    if (!token) {
+      navigate('/admin/login');
+      return;
+    }
+    fetchAnalytics();
+  }, [token, navigate, fetchAnalytics]);
 
   const handleLogout = () => {
     logout();

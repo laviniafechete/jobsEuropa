@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Building2 } from "lucide-react";
-import { useAuthStore } from "../../stores/authStore";
+import { useAuthStore, CompanyProfile } from "../../stores/authStore";
 import { useSnackbar } from "../../hooks/useSnackbar";
 import { useNavigate } from "react-router-dom";
-import { API_BASE_URL } from "../../config/env";
-import PhoneInput from '../../components/PhoneInput';
+import PhoneInput from "../../components/PhoneInput";
+import { employerAPI, EmployerCompanyProfilePayload } from "../../services/api";
 
 const DOMAINS = [
   { value: "", label: "Selectează domeniul de activitate" },
@@ -23,71 +23,103 @@ const DOMAINS = [
   { value: "altele", label: "Altele" }
 ];
 
-type Company = {
+type PhoneValue = { prefix: string; number: string };
+
+interface CompanyFormState {
   name: string;
   cui: string;
   location: string;
   domain: string;
   description: string;
-  contactPerson?: string;
-  position?: string;
-  email?: string;
-  phone?: { prefix: string; number: string } | string;
-  website?: string;
-};
+  contactPerson: string;
+  position: string;
+  email: string;
+  phone: PhoneValue;
+  website: string;
+}
 
-type Props = {
+interface CompanyFormProps {
   onSuccess?: () => void;
-  initialData?: Company;
-  onSave?: (company: Company) => void;
+  initialData?: CompanyProfile;
+  onSave?: (company: CompanyFormState) => void;
+}
+
+const DEFAULT_PHONE: PhoneValue = { prefix: "+40", number: "" };
+
+const convertPhone = (value?: string | PhoneValue): PhoneValue => {
+  if (!value) {
+    return DEFAULT_PHONE;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.startsWith("+") ? value : `+${value}`;
+    const prefix = normalized.slice(0, 3) || "+40";
+    const number = normalized.slice(3);
+    return { prefix, number };
+  }
+
+  return {
+    prefix: value.prefix || DEFAULT_PHONE.prefix,
+    number: value.number || DEFAULT_PHONE.number
+  };
 };
 
-export default function CompanyForm({ onSuccess = () => {}, initialData, onSave }: Props) {
-  const { token, employer, updateEmployer } = useAuthStore();
+const mapInitialData = (data?: CompanyProfile): CompanyFormState => ({
+  name: data?.name || "",
+  cui: data?.cui || "",
+  location: data?.location || "",
+  domain: data?.domain || "",
+  description: data?.description || "",
+  contactPerson: data?.contactPerson || "",
+  position: data?.position || "",
+  email: data?.email || "",
+  phone: convertPhone(data?.phone),
+  website: data?.website || ""
+});
+
+export default function CompanyForm({
+  onSuccess = () => {},
+  initialData,
+  onSave
+}: CompanyFormProps) {
+  const { token, updateEmployer } = useAuthStore();
   const { showSuccess, showError } = useSnackbar();
   const navigate = useNavigate();
-  const [form, setForm] = useState<Company>(
-    initialData || {
-      name: "",
-      cui: "",
-      location: "",
-      domain: "",
-      description: "",
-      phone: { prefix: '+40', number: '' },
-    }
-  );
+  const [form, setForm] = useState<CompanyFormState>(mapInitialData(initialData));
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  const loadCompanyProfile = useCallback(async () => {
     if (!token) return;
-    setLoading(true);
-          fetch(`${API_BASE_URL}/employer/profile`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.data.companyProfile) {
-          setForm({ ...form, ...data.data.companyProfile });
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line
+
+    try {
+      setLoading(true);
+      const response = await employerAPI.getCompanyProfile();
+      if (response.success && response.data?.companyProfile) {
+        setForm(mapInitialData(response.data.companyProfile));
+      }
+    } catch {
+      // ignore fetch errors, feedback already shown elsewhere
+    } finally {
+      setLoading(false);
+    }
   }, [token]);
 
   useEffect(() => {
+    loadCompanyProfile();
+  }, [loadCompanyProfile]);
+
+  useEffect(() => {
     if (initialData) {
-      setForm(initialData);
+      setForm(mapInitialData(initialData));
     }
   }, [initialData]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
   };
-
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,42 +127,35 @@ export default function CompanyForm({ onSuccess = () => {}, initialData, onSave 
       showError("Nu ești autentificat");
       return;
     }
+
     try {
-      const phoneString = typeof form.phone === 'string' ? form.phone : `${form.phone?.prefix || '+40'}${form.phone?.number || ''}`;
-      const payload = {
+      const phoneString = `${form.phone.prefix}${form.phone.number}`;
+      const payload: EmployerCompanyProfilePayload = {
         ...form,
-        phone: phoneString,
+        phone: phoneString
       };
-      const response = await fetch(`${API_BASE_URL}/employer/save-profile`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        showError(errorData.error?.message || "Eroare la salvarea profilului");
+      const response = await employerAPI.saveCompanyProfile(payload);
+      if (!response.success) {
+        showError(response.error?.message || "Eroare la salvarea profilului");
         return;
       }
-      const data = await response.json();
       showSuccess("Profilul companiei a fost salvat cu succes!");
       // Fetch employer profile again to update hasProfileCompleted
       try {
-        const profileRes = await fetch(`${API_BASE_URL}/employer/profile`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const profileData = await profileRes.json();
-        if (profileData.success && profileData.data) {
-          if (updateEmployer) updateEmployer({ ...profileData.data });
+        const profileData = await employerAPI.getCompanyProfile();
+        if (profileData.success && profileData.data && updateEmployer) {
+          updateEmployer(profileData.data as CompanyProfile);
         }
-      } catch (e) { /* ignore */ }
+      } catch {
+        // ignore secondary fetch errors
+      }
       if (onSave) onSave(form);
       onSuccess();
       setTimeout(() => navigate("/employer/home"), 500);
-    } catch (err: any) {
-      showError(err.message || "Eroare la salvarea profilului");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Eroare la salvarea profilului";
+      showError(message);
     }
   };
 
@@ -170,14 +195,14 @@ export default function CompanyForm({ onSuccess = () => {}, initialData, onSave 
           name="contactPerson"
           className="border rounded-lg px-4 py-2"
           placeholder="Persoană de contact - Nume și prenume"
-          value={(form as any).contactPerson || ""}
+          value={form.contactPerson}
           onChange={handleChange}
         />
         <input
           name="position"
           className="border rounded-lg px-4 py-2"
           placeholder="Funcția în firmă (ex: HR, Manager, Admin)"
-          value={(form as any).position || ""}
+          value={form.position}
           onChange={handleChange}
         />
         <input
@@ -185,20 +210,20 @@ export default function CompanyForm({ onSuccess = () => {}, initialData, onSave 
           type="email"
           className="border rounded-lg px-4 py-2"
           placeholder="Email de contact"
-          value={(form as any).email || ""}
+          value={form.email}
           onChange={handleChange}
         />
         <PhoneInput
           label="Telefon (WhatsApp)"
-          value={typeof form.phone === 'string' ? { prefix: form.phone.substring(0, 3) || '+40', number: form.phone.substring(3) || '' } : (form.phone || { prefix: '+40', number: '' })}
-          onChange={val => setForm({ ...form, phone: val })}
+          value={form.phone}
+          onChange={val => setForm(prev => ({ ...prev, phone: val }))}
           required
         />
         <input
           name="website"
           className="border rounded-lg px-4 py-2"
           placeholder="Website (opțional)"
-          value={(form as any).website || ""}
+          value={form.website}
           onChange={handleChange}
         />
         <select

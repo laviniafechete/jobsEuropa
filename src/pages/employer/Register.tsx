@@ -1,16 +1,29 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { authAPI } from '../../services/api';
-import { useSnackbar } from '../../hooks/useSnackbar';
-import PhoneInput from '../../components/PhoneInput';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { authAPI, RegisterEmployerRequest } from "../../services/api";
+import { useSnackbar } from "../../hooks/useSnackbar";
+import PhoneInput from "../../components/PhoneInput";
+
+interface PhoneValue {
+  prefix: string;
+  number: string;
+}
+
+interface EmployerRegisterForm {
+  companyName: string;
+  email: string;
+  password: string;
+  confirm: string;
+  phone: PhoneValue;
+}
 
 const EmployerRegister: React.FC = () => {
-  const [formData, setFormData] = useState({
-    companyName: '',
-    email: '',
-    password: '',
-    confirm: '',
-    phone: { prefix: '+40', number: '' },
+  const [formData, setFormData] = useState<EmployerRegisterForm>({
+    companyName: "",
+    email: "",
+    password: "",
+    confirm: "",
+    phone: { prefix: "+40", number: "" },
   });
   const [isLoading, setIsLoading] = useState(false);
   
@@ -18,10 +31,11 @@ const EmployerRegister: React.FC = () => {
   const { showSuccess, showError } = useSnackbar();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,7 +45,7 @@ const EmployerRegister: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const payload = {
+      const payload: RegisterEmployerRequest = {
         ...formData,
         phone: formData.phone.prefix + formData.phone.number,
       };
@@ -41,10 +55,12 @@ const EmployerRegister: React.FC = () => {
         showSuccess('Cont de angajator creat cu succes! Verifică email-ul pentru a activa contul.');
         navigate('/employer/login');
       } else {
-        showError(response.error?.message || 'Înregistrare eșuată');
+        showError(response.error?.message || "Înregistrare eșuată");
       }
-    } catch (error: any) {
-      showError(error.response?.data?.error?.message || 'A apărut o eroare la înregistrare');
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "A apărut o eroare la înregistrare";
+      showError(message);
     } finally {
       setIsLoading(false);
     }

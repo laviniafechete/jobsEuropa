@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Filter, Loader2, LogIn, UserPlus } from "lucide-react";
 import CustomSelect from "../../components/CustomSelect";
@@ -63,7 +63,11 @@ const TYPES = [
 
 export default function JobList() {
   const { user, token } = useAuthStore();
-  const { showSuccess, showError } = useSnackbar();
+  const { showError } = useSnackbar();
+  const showErrorRef = useRef(showError);
+  useEffect(() => {
+    showErrorRef.current = showError;
+  }, [showError]);
   const navigate = useNavigate();
   
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -75,11 +79,12 @@ export default function JobList() {
   const [type, setType] = useState("");
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [acceptTerms] = useState(false);
 
   // Fetch jobs from API
-  const fetchJobs = async (pageNum = 1, reset = false) => {
-    console.log(`fetchJobs called: page=${pageNum}, reset=${reset}`);
+  const fetchJobs = useCallback(async (pageNum = 1, reset = false) => {
+    if (reset) {
+      setLoading(true);
+    }
     try {
       const params = new URLSearchParams({
         page: pageNum.toString(),
@@ -102,36 +107,38 @@ export default function JobList() {
         throw new Error("Failed to fetch jobs");
       }
 
-      const data = await response.json();
+      const data: {
+        data?: {
+          jobs: Job[];
+          pagination: { hasNext: boolean };
+        };
+      } = await response.json();
       
-      if (reset) {
-        setJobs(data.data.jobs);
-      } else {
-        setJobs(prev => [...prev, ...data.data.jobs]);
-      }
-      
-      setHasMore(data.data.pagination.hasNext);
+      const jobsPayload = data.data?.jobs ?? [];
+      const pagination = data.data?.pagination ?? { hasNext: false };
+
+      setJobs(prev => (reset ? jobsPayload : [...prev, ...jobsPayload]));
+      setHasMore(Boolean(pagination.hasNext));
       setPage(pageNum);
     } catch (error) {
       console.error("Error fetching jobs:", error);
-      showError("Eroare la încărcarea joburilor");
+      showErrorRef.current("Eroare la încărcarea joburilor");
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, domain, type, token]);
 
   // Load jobs on component mount and when filters change
   useEffect(() => {
-    console.log(`useEffect triggered: search="${search}", domain="${domain}", type="${type}"`);
     fetchJobs(1, true);
-  }, [search, domain, type]);
+  }, [fetchJobs]);
 
   // Load more jobs
-  const loadMore = () => {
+  const loadMore = useCallback(() => {
     if (!loading && hasMore) {
       fetchJobs(page + 1, false);
     }
-  };
+  }, [loading, hasMore, fetchJobs, page]);
 
   // Sort jobs: non-applied first, then applied
   const sortedJobs = [...jobs].sort((a, b) => {
@@ -139,6 +146,15 @@ export default function JobList() {
     if (!a.hasApplied && b.hasApplied) return -1;
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
+
+  const handleJobApplied = useCallback((jobId: string) => {
+    setJobs(prev =>
+      prev.map(job =>
+        job._id === jobId ? { ...job, hasApplied: true } : job
+      )
+    );
+    fetchJobs(1, true);
+  }, [fetchJobs]);
 
   // Format salary
   const formatSalary = (salary: Job['salary'] | string | null | undefined): string => {
@@ -277,6 +293,7 @@ export default function JobList() {
               key={job._id}
               job={job}
               onClick={(job) => { setSelectedJob(job); setShowModal(true); }}
+              onApplied={handleJobApplied}
             />
           ))}
         </div>

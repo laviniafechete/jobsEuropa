@@ -1,25 +1,33 @@
 import express from 'express';
-import { 
-  protect, 
-  protectEmployer, 
+import {
+  protect,
+  protectEmployer,
   optionalAuth,
   rateLimit,
   checkEmployerSubscription
 } from '../middlewares/authMiddleware.js';
-import { asyncHandler, sendSuccess } from '../utils/errorHandler.js';
+import {
+  asyncHandler,
+  sendSuccess,
+  NotFoundError,
+  AuthorizationError,
+  ValidationError
+} from '../utils/errorHandler.js';
 import Job from '../models/Job.js';
 import User from '../models/User.js';
 import Employer from '../models/Employer.js';
-import { 
-  validateRequired, 
-  validateLength, 
-  validateEnum, 
+import {
+  validateRequired,
+  validateLength,
+  validateEnum,
   validateArray,
   validateSalary,
-  sanitizeInput 
+  sanitizeInput
 } from '../utils/validation.js';
-import { sendJobApplicationNotification } from '../controllers/sendEmail.js';
-import { sendApplicationEmail } from '../controllers/sendEmail.js';
+import {
+  sendJobApplicationNotification,
+  sendInternalApplicationNotification
+} from '../controllers/sendEmail.js';
 
 const router = express.Router();
 
@@ -117,6 +125,35 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
       totalJobs: total,
       hasNext: skip + jobs.length < total,
       hasPrev: parseInt(page) > 1
+    }
+  }, 'Jobs retrieved successfully');
+}));
+
+// Get employer's jobs (must come before /:id route)
+router.get('/employer/my-jobs', protectEmployer, asyncHandler(async (req, res) => {
+  const { page = 1, limit = 10, status } = req.query;
+
+  const filter = { employer: req.user._id };
+  if (status === 'active') filter.isActive = true;
+  if (status === 'inactive') filter.isActive = false;
+
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+
+  const jobs = await Job.find(filter)
+    .populate('applications.user', 'name email')
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(parseInt(limit))
+    .lean();
+
+  const total = await Job.countDocuments(filter);
+
+  sendSuccess(res, {
+    jobs,
+    pagination: {
+      currentPage: parseInt(page),
+      totalPages: Math.ceil(total / parseInt(limit)),
+      totalJobs: total
     }
   }, 'Jobs retrieved successfully');
 }));
@@ -376,8 +413,7 @@ router.post('/:id/apply', protect, asyncHandler(async (req, res) => {
       job.location
     );
     // Trimit și către contact@jobs-europa.com
-    await sendApplicationEmail(
-      'contact@jobs-europa.com',
+    await sendInternalApplicationNotification(
       job.title,
       user.name,
       candidateContact,
@@ -388,33 +424,53 @@ router.post('/:id/apply', protect, asyncHandler(async (req, res) => {
   sendSuccess(res, null, 'Application submitted successfully');
 }));
 
-// Get employer's jobs
-router.get('/employer/my-jobs', protectEmployer, asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, status } = req.query;
-  
-  const filter = { employer: req.user._id };
-  if (status === 'active') filter.isActive = true;
-  if (status === 'inactive') filter.isActive = false;
+// Guest apply to job (no account required)
+router.post('/:id/guest-apply', rateLimit(5, 60 * 60 * 1000), asyncHandler(async (req, res) => {
+  const { name, phone, email, message } = req.body;
 
-  const skip = (parseInt(page) - 1) * parseInt(limit);
-  
-  const jobs = await Job.find(filter)
-    .populate('applications.user', 'name email')
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(parseInt(limit))
-    .lean();
+  validateRequired(name, 'Nume');
+  validateRequired(phone, 'Telefon');
+  if (name) validateLength(name, 'Nume', 2, 100);
+  if (phone) validateLength(phone, 'Telefon', 5, 20);
+  if (email) validateLength(email, 'Email', 5, 150);
+  if (message) validateLength(message, 'Mesaj', 0, 1000);
 
-  const total = await Job.countDocuments(filter);
+  const job = await Job.findById(req.params.id);
+  if (!job) {
+    throw new NotFoundError('Job not found');
+  }
 
-  sendSuccess(res, {
-    jobs,
-    pagination: {
-      currentPage: parseInt(page),
-      totalPages: Math.ceil(total / parseInt(limit)),
-      totalJobs: total
-    }
-  }, 'Jobs retrieved successfully');
+  const employer = await Employer.findById(job.employer);
+  if (!employer) {
+    throw new NotFoundError('Employer not found');
+  }
+
+  const sanitizedName = sanitizeInput(name);
+  const sanitizedPhone = sanitizeInput(phone);
+  const sanitizedEmail = email ? sanitizeInput(email) : '';
+  const sanitizedMessage = message ? sanitizeInput(message) : '';
+
+  const contactDetails = `${sanitizedName} - ${sanitizedPhone}${sanitizedEmail ? ` - ${sanitizedEmail}` : ''}`;
+  const additionalInfo = sanitizedMessage ? `\n\nMesaj candidat:\n${sanitizedMessage}` : '';
+
+  if (employer.email) {
+    await sendJobApplicationNotification(
+      employer.email,
+      job.title,
+      sanitizedName,
+      `${sanitizedPhone}${sanitizedEmail ? ` / ${sanitizedEmail}` : ''}${additionalInfo}`,
+      job.location
+    );
+
+    await sendInternalApplicationNotification(
+      job.title,
+      sanitizedName,
+      `${sanitizedPhone}${sanitizedEmail ? ` / ${sanitizedEmail}` : ''}${additionalInfo}`,
+      job.location
+    );
+  }
+
+  sendSuccess(res, null, 'Application submitted successfully');
 }));
 
 // Update application status (employer only)

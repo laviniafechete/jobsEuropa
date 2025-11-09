@@ -1,22 +1,21 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../stores/authStore";
 import { useSnackbar } from "../../hooks/useSnackbar";
 import { API_BASE_URL } from "../../config/env";
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Briefcase, 
-  Edit, 
-  Save, 
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Briefcase,
+  Edit,
+  Save,
   X,
   Calendar,
   Car,
   FileText,
-  Globe,
-  Euro
+  Globe
 } from "lucide-react";
 import PhoneInput from '../../components/PhoneInput';
 
@@ -83,6 +82,74 @@ const getLevelLabel = (level: string) => {
   return option ? option.label : level;
 };
 
+interface CvLanguage {
+  language: string;
+  level: string;
+}
+
+interface CvPersonalInfo {
+  phone?: string;
+  location?: string;
+  dateOfBirth?: string;
+  gender?: string;
+}
+
+interface CvProfessional {
+  experience?: string;
+  education?: string;
+  summary?: string;
+}
+
+interface CvSkills {
+  technical?: string[];
+  languages?: CvLanguage[];
+}
+
+interface CvPreferences {
+  availability?: string;
+  salaryExpectation?: string;
+  interestDomains?: string[];
+}
+
+interface CvDocuments {
+  drivingLicense?: boolean;
+  hasPassport?: boolean;
+  willingToRelocate?: boolean;
+}
+
+interface CvData {
+  personalInfo?: CvPersonalInfo;
+  professional?: CvProfessional;
+  skills?: CvSkills;
+  preferences?: CvPreferences;
+  documents?: CvDocuments;
+  additionalInfo?: string;
+}
+
+interface CvFormState {
+  experience: string;
+  skills: string;
+  education: string;
+  languages: string;
+  availability: string;
+  location: string;
+  phone: { prefix: string; number: string };
+  birthDate: string;
+  gender: string;
+  drivingLicense: boolean;
+  hasPassport: boolean;
+  willingToRelocate: boolean;
+  salaryExpectation: string;
+  additionalInfo: string;
+}
+
+interface UserLanguage {
+  id?: string;
+  language: string;
+  level: string;
+  customLanguage?: string;
+}
+
 // Get base URL without /api
 const getImageBaseUrl = () => {
   if (API_BASE_URL.includes('localhost')) {
@@ -99,13 +166,14 @@ export default function Profile() {
   
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [cvData, setCvData] = useState<any>(null);
+  const [cvData, setCvData] = useState<CvData | null>(null);
   const [isLoadingCV, setIsLoadingCV] = useState(false);
   const hasLoadedCV = useRef(false);
-
-
+  const [cvImageUrl, setCvImageUrl] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CvFormState>({
     experience: "",
     skills: "",
     education: "",
@@ -122,8 +190,12 @@ export default function Profile() {
     additionalInfo: ""
   });
 
-  const [userLanguages, setUserLanguages] = useState<Array<{id: string, language: string, level: string, customLanguage?: string}>>([]);
-  const [newLanguage, setNewLanguage] = useState({ language: "", level: "", customLanguage: "" });
+  const [userLanguages, setUserLanguages] = useState<UserLanguage[]>([]);
+  const [newLanguage, setNewLanguage] = useState<UserLanguage>({
+    language: "",
+    level: "",
+    customLanguage: ""
+  });
 
   const addLanguage = () => {
     if (newLanguage.language && newLanguage.level) {
@@ -233,26 +305,7 @@ export default function Profile() {
     }
   };
 
-  useEffect(() => {
-    // Load CV data if user has completed CV and we haven't loaded it yet
-    if (user?.hasCompletedCv && !hasLoadedCV.current && !isLoadingCV) {
-      loadCVData();
-    }
-    
-    // Debug logging for CV image
-    console.log('=== CV IMAGE STATE DEBUG ===');
-    console.log('cvImageUrl:', cvImageUrl);
-    console.log('cvImageUrl type:', typeof cvImageUrl);
-    console.log('cvImageUrl truthy:', !!cvImageUrl);
-    
-    if (cvImageUrl) {
-      const fullImageUrl = `${getImageBaseUrl()}${cvImageUrl}`;
-      console.log('Full image URL:', fullImageUrl);
-      console.log('Image base URL:', getImageBaseUrl());
-    }
-  }, [user, cvImageUrl]);
-
-  const loadCVData = async () => {
+  const loadCVData = useCallback(async () => {
     if (!token || isLoadingCV || hasLoadedCV.current) return;
     
     setIsLoadingCV(true);
@@ -267,21 +320,16 @@ export default function Profile() {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('CV Data response:', data);
-        setCvData(data.data.cv);
+        const cv: CvData = data.data.cv || {};
+        setCvData(cv);
         
         // Load CV image URL from user data
         if (data.data.user?.cvImageUrl) {
-          console.log('Setting CV image URL:', data.data.user.cvImageUrl);
           setCvImageUrl(data.data.user.cvImageUrl);
-        } else {
-          console.log('No CV image URL found in response');
         }
         
         // Pre-populate form with existing data
         if (data.data.cv) {
-          const cv = data.data.cv;
-          
           // Parse phone number
           let phoneData = { prefix: '+40', number: '' };
           if (cv.personalInfo?.phone) {
@@ -305,15 +353,12 @@ export default function Profile() {
           }
           
           // Parse languages
-          const languages = cv.skills?.languages?.map((lang: any, index: number) => ({
+          const languages: UserLanguage[] = cv.skills?.languages?.map((lang, index) => ({
             id: index.toString(),
             language: lang.language,
             level: lang.level,
             customLanguage: lang.language
           })) || [];
-          
-          // Parse interest domains
-          const interestDomains = cv.preferences?.interestDomains || [];
           
           setFormData({
             experience: cv.professional?.experience || "",
@@ -342,7 +387,13 @@ export default function Profile() {
     } finally {
       setIsLoadingCV(false);
     }
-  };
+  }, [isLoadingCV, token]);
+
+useEffect(() => {
+  if (user?.hasCompletedCv && !hasLoadedCV.current && !isLoadingCV) {
+    loadCVData();
+  }
+}, [user, isLoadingCV, loadCVData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -397,8 +448,8 @@ export default function Profile() {
         throw new Error(errorData.message || "Eroare la salvarea CV-ului");
       }
 
-      const result = await response.json();
-      
+      await response.json();
+
       // Update user in store
       updateUser({
         hasCompletedCv: true,
@@ -412,8 +463,12 @@ export default function Profile() {
       
       showSuccess("Profilul a fost actualizat cu succes!");
       setIsEditing(false);
-    } catch (error: any) {
-      showError(error.message || "Eroare la salvarea profilului. Vă rugăm încercați din nou.");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Eroare la salvarea profilului. Vă rugăm încercați din nou.";
+      showError(message);
     } finally {
       setIsLoading(false);
     }
@@ -446,7 +501,7 @@ export default function Profile() {
       }
       
       // Parse languages
-      const languages = cvData.skills?.languages?.map((lang: any, index: number) => ({
+      const languages: UserLanguage[] = cvData.skills?.languages?.map((lang, index) => ({
         id: index.toString(),
         language: lang.language,
         level: lang.level,
@@ -816,8 +871,8 @@ export default function Profile() {
                     {/* Display added languages */}
                     {userLanguages.length > 0 && (
                       <div className="space-y-2">
-                        {userLanguages.map((lang) => (
-                          <div key={lang.id} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg">
+                        {userLanguages.map((lang, index) => (
+                          <div key={lang.id ?? index} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg">
                             <span>
                               <strong>{getLanguageLabel(lang.language, lang.customLanguage)}</strong> - {getLevelLabel(lang.level)}
                             </span>
@@ -864,7 +919,7 @@ export default function Profile() {
                     <div>
                       <h3 className="font-medium text-gray-900 mb-2">Limbi străine</h3>
                       <div className="flex flex-wrap gap-2">
-                        {cvData.skills.languages.map((lang: any, index: number) => (
+                        {cvData.skills.languages.map((lang, index) => (
                           <span key={index} className="px-2 py-1 bg-green-100 text-green-800 text-sm rounded-full">
                             {lang.language} ({lang.level})
                           </span>

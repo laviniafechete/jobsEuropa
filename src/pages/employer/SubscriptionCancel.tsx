@@ -2,18 +2,34 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { authAPI } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
+import type { Employer } from '../../stores/authStore';
 
 export default function SubscriptionCancel() {
   const navigate = useNavigate();
   const updateEmployer = useAuthStore((s) => s.updateEmployer);
 
   useEffect(() => {
-    // Refresh status abonament după anulare (opțional)
-    authAPI.getUserInfo().then((res) => {
-      if (res.success && res.data && (res.data as any).subscriptionActive !== undefined) {
-        updateEmployer(res.data as any);
+    let isMounted = true;
+
+    const refreshEmployer = async () => {
+      try {
+        const res = await authAPI.getUserInfo();
+        if (!isMounted || !res.success || !res.data) {
+          return;
+        }
+        if (typeof res.data === "object" && "subscriptionActive" in res.data) {
+          updateEmployer(res.data as Employer);
+        }
+      } catch {
+        // ignore refresh errors
       }
-    });
+    };
+
+    refreshEmployer();
+
+    return () => {
+      isMounted = false;
+    };
   }, [updateEmployer]);
 
   return (

@@ -52,8 +52,10 @@ const EmployerLogin: React.FC = () => {
       } else {
         showError(response.error?.message || 'Autentificare eșuată');
       }
-    } catch (error: any) {
-      showError(error.response?.data?.error?.message || 'A apărut o eroare la autentificare');
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'A apărut o eroare la autentificare';
+      showError(message);
     } finally {
       setIsLoading(false);
     }

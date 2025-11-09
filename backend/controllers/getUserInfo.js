@@ -1,46 +1,59 @@
-// backend/controllers/getUserInfo.js
 import User from "../models/User.js";
-import { asyncHandler, sendSuccess } from "../utils/errorHandler.js";
+import Employer from "../models/Employer.js";
+import { asyncHandler, sendSuccess, sendError } from "../utils/errorHandler.js";
 
-export const getUserInfo = async (req, res) => {
-  try {
-    // Get user from middleware
-    const user = req.user;
+export const getUserInfo = asyncHandler(async (req, res) => {
+  // Get user from middleware
+  const user = req.user;
 
-    if (!user) {
-      return res.status(404).json({ success: false, error: { message: "User not found" } });
+  if (!user) {
+    return sendError(res, "Utilizatorul nu a fost găsit", 404);
   }
 
-    console.log("User from middleware:", user);
-
+  if (req.userType === "user") {
     // Get user with populated applied jobs
     const userWithJobs = await User.findById(user._id)
-      .select('-password -resetPasswordToken -resetPasswordExpires -verificationToken -verificationTokenExpires -smsVerificationCode -smsCodeExpiry')
+      .select(
+        "-password -resetPasswordToken -resetPasswordExpires -verificationToken -verificationTokenExpires -smsVerificationCode -smsCodeExpiry"
+      )
       .populate({
-        path: 'appliedJobs.job',
+        path: "appliedJobs.job",
         populate: {
-          path: 'employer',
-          select: 'companyName email phone location'
-        }
+          path: "employer",
+          select: "companyName email phone location",
+        },
       });
 
-    console.log("User with jobs:", userWithJobs);
+    if (!userWithJobs) {
+      return sendError(res, "Utilizatorul nu a fost găsit", 404);
+    }
 
-    // Ensure appliedJobs is an array
     if (!userWithJobs.appliedJobs) {
       userWithJobs.appliedJobs = [];
     }
 
-    res.json({
-      success: true,
-      message: "User information retrieved successfully",
-      data: userWithJobs
-    });
-  } catch (error) {
-    console.error("Error in getUserInfo:", error);
-    res.status(500).json({
-      success: false,
-      error: { message: error.message }
-    });
+    return sendSuccess(
+      res,
+      userWithJobs,
+      "Informațiile utilizatorului au fost obținute"
+    );
   }
-};
+
+  if (req.userType === "employer") {
+    const employer = await Employer.findById(user._id).select(
+      "-password -resetPasswordToken -resetPasswordExpires -verificationToken -verificationTokenExpires"
+    );
+
+    if (!employer) {
+      return sendError(res, "Angajatorul nu a fost găsit", 404);
+    }
+
+    return sendSuccess(
+      res,
+      employer.toPublicJSON ? employer.toPublicJSON() : employer,
+      "Informațiile angajatorului au fost obținute"
+    );
+  }
+
+  return sendError(res, "Tip utilizator necunoscut", 400);
+});

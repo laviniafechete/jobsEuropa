@@ -55,7 +55,6 @@ import SubscriptionCancel from './pages/employer/SubscriptionCancel';
 
 // Hooks
 import { useAuthStore } from "./stores/authStore";
-import { useAdminStore } from "./stores/adminStore";
 import { EmployerProvider } from "./context/EmployerContext";
 import { clearAllCookies } from "./utils/cookieUtils";
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Building2, 
@@ -49,15 +49,7 @@ export default function AdminEmployers() {
   const { showError } = useSnackbar();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!token) {
-      navigate('/admin/login');
-      return;
-    }
-    fetchEmployers();
-  }, [token, navigate]);
-
-  const fetchEmployers = async () => {
+  const fetchEmployers = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/employers', {
         headers: {
@@ -77,7 +69,15 @@ export default function AdminEmployers() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showError, token]);
+
+  useEffect(() => {
+    if (!token) {
+      navigate('/admin/login');
+      return;
+    }
+    fetchEmployers();
+  }, [token, navigate, fetchEmployers]);
 
   const filteredEmployers = employersData?.employers.filter(employer => {
     const companyName = employer.companyProfile?.name || '';

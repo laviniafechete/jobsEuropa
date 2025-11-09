@@ -11,7 +11,7 @@ export default function JobAdCard({
   onEdit: () => void;
   onPromote?: () => void;
 }) {
-  function formatSalary(salary: any) {
+  function formatSalary(salary: JobAd["salary"]) {
     if (!salary) return 'Salariu negociabil';
     if (typeof salary === 'string') return salary;
     if (typeof salary === 'object') {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Briefcase, 
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAdminStore } from '../../stores/adminStore';
 import { useSnackbar } from '../../hooks/useSnackbar';
+import { API_BASE_URL } from '../../config/env';
 
 interface Job {
   _id: string;
@@ -52,8 +53,6 @@ interface JobsData {
 }
 
 const getJobStatusBadge = (job: Job) => {
-  const applicationsCount = job.applications?.length || 0;
-  
   if (job.status === 'active') {
     return {
       label: 'Activ',
@@ -93,17 +92,9 @@ export default function AdminJobs() {
   const { showError } = useSnackbar();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!token) {
-      navigate('/admin/login');
-      return;
-    }
-    fetchJobs();
-  }, [token]);
-
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     try {
-      const response = await fetch('/api/jobs');
+      const response = await fetch(`${API_BASE_URL}/jobs`);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -151,7 +142,15 @@ export default function AdminJobs() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showError]);
+
+  useEffect(() => {
+    if (!token) {
+      navigate('/admin/login');
+      return;
+    }
+    fetchJobs();
+  }, [token, navigate, fetchJobs]);
 
   const filteredJobs = jobsData?.jobs.filter(job => {
     const matchesSearch = searchTerm === '' || 

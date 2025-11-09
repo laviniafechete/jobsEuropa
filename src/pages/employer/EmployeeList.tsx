@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
-import { MessageCircle, Star, X, User, MapPin, Calendar, GraduationCap, Briefcase, Phone, Mail, Award, Languages, Car, Plane, BadgeCheck } from "lucide-react";
-import { useAuthStore } from "../../stores/authStore";
-import { useSnackbar } from "../../hooks/useSnackbar";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { Star, User, MapPin, Phone, Mail, BadgeCheck, X } from "lucide-react";
+import { API_BASE_URL } from "../../config/env";
 
 const educationOptions = [
   { value: "", label: "Selectează nivelul de educație" },
@@ -35,15 +34,13 @@ const getSalaryLabel = (value: string) => {
 };
 
 // --- Terms Modal Component ---
-function TermsModal({
-  open,
-  onAccept,
-  onClose,
-}: {
+type TermsModalProps = {
   open: boolean;
   onAccept: () => void;
   onClose: () => void;
-}) {
+};
+
+function TermsModal({ open, onAccept, onClose }: TermsModalProps) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -53,7 +50,7 @@ function TermsModal({
           onClick={onClose}
           aria-label="Închide"
         >
-          <span className="text-xl font-bold">&times;</span>
+          <X className="w-5 h-5" />
         </button>
         <h3 className="text-lg font-bold mb-4 text-center">
           Termeni și Condiții pentru Contact
@@ -96,7 +93,91 @@ function TermsModal({
   );
 }
 
-// 1. Extind tipul Employee pentru a include toate câmpurile relevante din user+cv
+type CvLanguage = {
+  language?: string;
+  level?: string;
+  customLanguage?: string;
+};
+
+type CvExperience = {
+  position?: string;
+  company?: string;
+  startDate?: string;
+  endDate?: string;
+  current?: boolean;
+  description?: string;
+  achievements?: string[];
+};
+
+type CvEducation = {
+  degree?: string;
+  institution?: string;
+  startDate?: string;
+  endDate?: string;
+  current?: boolean;
+  field?: string;
+  gpa?: number;
+};
+
+type CvCertification = {
+  name?: string;
+  issuer?: string;
+  date?: string;
+  expiryDate?: string;
+  credentialId?: string;
+};
+
+type CvDesiredSalary =
+  | {
+      min?: number;
+      max?: number;
+      currency?: string;
+    }
+  | {
+      min?: string;
+      max?: string;
+      currency?: string;
+    };
+
+type CvPreferences = {
+  workType?: string[];
+  availability?: string;
+  preferredLocations?: string[];
+  industries?: string[];
+  desiredSalary?: CvDesiredSalary;
+};
+
+type CvSkills = {
+  technical?: string[];
+  soft?: string[];
+  languages?: CvLanguage[];
+};
+
+type CvProfessional = {
+  title?: string;
+  summary?: string;
+  experience?: CvExperience[];
+  education?: CvEducation[];
+};
+
+type CvPersonalInfo = {
+  name?: string;
+  email?: string;
+  phone?: string;
+  location?: string;
+  profilePicture?: string;
+  dateOfBirth?: string;
+  nationality?: string;
+};
+
+type CvData = {
+  personalInfo?: CvPersonalInfo;
+  professional?: CvProfessional;
+  skills?: CvSkills;
+  preferences?: CvPreferences;
+  certifications?: CvCertification[];
+};
+
 type Employee = {
   _id: string;
   name: string;
@@ -109,10 +190,8 @@ type Employee = {
   emailVerified?: boolean;
   phoneVerified?: boolean;
   photoUrl?: string;
-  cv?: any; // Structura completă a CV-ului
+  cv?: CvData;
 };
-
-// Elimin array-ul EMPLOYEES și orice referință la experience din array-ul mock (nu mai este folosit)
 
 type EmployeeReview = {
   name: string;
@@ -122,9 +201,13 @@ type EmployeeReview = {
 
 // 2. Adaug state pentru filtrare
 
-function EmployeeModal({ employee, open, onClose }: { employee: Employee | null; open: boolean; onClose: () => void; }) {
-  const [showContact, setShowContact] = useState(false);
-  const [showTerms, setShowTerms] = useState(false);
+type EmployeeModalProps = {
+  employee: Employee | null;
+  open: boolean;
+  onClose: () => void;
+};
+
+function EmployeeModal({ employee, open, onClose }: EmployeeModalProps) {
   const [reviews, setReviews] = useState<EmployeeReview[]>([]);
   const [form, setForm] = useState<EmployeeReview>({
     name: "",
@@ -139,6 +222,55 @@ function EmployeeModal({ employee, open, onClose }: { employee: Employee | null;
   const skills = cv.skills || {};
   const preferences = cv.preferences || {};
   const certifications = cv.certifications || [];
+
+  const formatDate = (value?: string) =>
+    value ? new Date(value).toLocaleDateString() : "";
+
+  const renderDesiredSalary = () => {
+    const desiredSalary = preferences.desiredSalary;
+    if (!desiredSalary) return "Nu specificat";
+
+    if (typeof desiredSalary.min === "string") {
+      return getSalaryLabel(desiredSalary.min);
+    }
+
+    if (
+      typeof desiredSalary.min === "number" &&
+      typeof desiredSalary.max === "number"
+    ) {
+      return `${desiredSalary.min} - ${desiredSalary.max} ${desiredSalary.currency || "EUR"}`;
+    }
+
+    if (typeof desiredSalary.min === "number") {
+      return `${desiredSalary.min} ${desiredSalary.currency || "EUR"}`;
+    }
+
+    if (typeof desiredSalary.max === "number") {
+      return `Până la ${desiredSalary.max} ${desiredSalary.currency || "EUR"}`;
+    }
+
+    return "Nu specificat";
+  };
+
+  const handleReviewSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!form.text.trim()) {
+      return;
+    }
+    setReviews((prev) => [
+      ...prev,
+      {
+        name: form.name || "Anonim",
+        rating: form.rating,
+        text: form.text.trim(),
+      },
+    ]);
+    setForm({
+      name: "",
+      rating: 5,
+      text: "",
+    });
+  };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 relative animate-fade-in overflow-y-auto max-h-[90vh]">
@@ -147,7 +279,7 @@ function EmployeeModal({ employee, open, onClose }: { employee: Employee | null;
           onClick={onClose}
           aria-label="Închide"
         >
-          <span className="text-xl font-bold">&times;</span>
+          <X className="w-5 h-5" />
         </button>
         <div className="flex flex-col items-center gap-3">
           <img
@@ -165,46 +297,51 @@ function EmployeeModal({ employee, open, onClose }: { employee: Employee | null;
           <div className="text-gray-600 text-sm">{professional.title}</div>
           <div className="text-gray-600 text-sm">{professional.summary}</div>
           <div className="flex flex-wrap gap-2 mt-2 mb-2">
-            {(skills.technical || []).map((s: string, i: number) => (
+            {(skills.technical || []).map((s, i) => (
               <span key={i} className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">{s}</span>
             ))}
-            {(skills.soft || []).map((s: string, i: number) => (
+            {(skills.soft || []).map((s, i) => (
               <span key={i} className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs">{s}</span>
             ))}
           </div>
           <div className="flex flex-wrap gap-2 mb-2">
-            {(skills.languages || []).map((l: any, i: number) => (
-              <span key={i} className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">{l.language} ({l.level})</span>
+            {(skills.languages || []).map((language, i) => (
+              <span key={i} className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
+                {language.language} ({language.level})
+              </span>
             ))}
           </div>
           <div className="text-gray-600 text-sm mb-2">
             <b>Email:</b> {personal.email || employee.email} <b>Telefon:</b> {personal.phone || employee.phone}
           </div>
           <div className="text-gray-600 text-sm mb-2">
-            <b>Data nașterii:</b> {personal.dateOfBirth ? new Date(personal.dateOfBirth).toLocaleDateString() : '-'} <b>Naționalitate:</b> {personal.nationality || '-'}
+            <b>Data nașterii:</b> {formatDate(personal.dateOfBirth) || "-"} <b>Naționalitate:</b> {personal.nationality || "-"}
           </div>
           <div className="text-gray-600 text-sm mb-2">
-            <b>Preferințe:</b> {preferences.workType?.join(', ')} | {preferences.availability} | {preferences.preferredLocations?.join(', ')} | {preferences.industries?.join(', ')}
+            <b>Preferințe:</b>{" "}
+            {[preferences.workType?.join(", "), preferences.availability, preferences.preferredLocations?.join(", "), preferences.industries?.join(", ")]
+              .filter(Boolean)
+              .join(" | ")}
           </div>
           <div className="text-gray-600 text-sm mb-2">
-            <b>Salariu dorit:</b> {
-              typeof preferences.desiredSalary?.min === 'string' 
-                ? getSalaryLabel(preferences.desiredSalary.min)
-                : preferences.desiredSalary?.min && preferences.desiredSalary?.max
-                  ? `${preferences.desiredSalary.min} - ${preferences.desiredSalary.max} ${preferences.desiredSalary.currency}`
-                  : 'Nu specificat'
-            }
+            <b>Salariu dorit:</b> {renderDesiredSalary()}
           </div>
           <div className="w-full mt-4">
             <h4 className="font-bold mb-2">Experiență profesională</h4>
-            {(professional.experience || []).length === 0 && <div className="text-gray-400 text-sm">Nicio experiență adăugată</div>}
-            {(professional.experience || []).map((exp: any, i: number) => (
+            {(professional.experience || []).length === 0 && (
+              <div className="text-gray-400 text-sm">Nicio experiență adăugată</div>
+            )}
+            {(professional.experience || []).map((exp, i) => (
               <div key={i} className="mb-2 border-b pb-2">
-                <b>{exp.position}</b> la <b>{exp.company}</b> ({exp.startDate ? new Date(exp.startDate).toLocaleDateString() : ''} - {exp.current ? 'Prezent' : exp.endDate ? new Date(exp.endDate).toLocaleDateString() : ''})
+                <b>{exp.position}</b> la <b>{exp.company}</b>{" "}
+                ({exp.startDate ? formatDate(exp.startDate) : ""} -{" "}
+                {exp.current ? "Prezent" : exp.endDate ? formatDate(exp.endDate) : ""})
                 <div className="text-xs text-gray-600">{exp.description}</div>
                 {exp.achievements && exp.achievements.length > 0 && (
                   <ul className="list-disc pl-5 text-xs text-gray-500 mt-1">
-                    {exp.achievements.map((a: string, j: number) => <li key={j}>{a}</li>)}
+                    {exp.achievements.map((achievement, j) => (
+                      <li key={j}>{achievement}</li>
+                    ))}
                   </ul>
                 )}
               </div>
@@ -212,111 +349,152 @@ function EmployeeModal({ employee, open, onClose }: { employee: Employee | null;
           </div>
           <div className="w-full mt-4">
             <h4 className="font-bold mb-2">Educație</h4>
-            {(professional.education || []).length === 0 && <div className="text-gray-400 text-sm">Nicio educație adăugată</div>}
-            {(professional.education || []).map((edu: any, i: number) => (
+            {(professional.education || []).length === 0 && (
+              <div className="text-gray-400 text-sm">Nicio educație adăugată</div>
+            )}
+            {(professional.education || []).map((edu, i) => (
               <div key={i} className="mb-2 border-b pb-2">
-                <b>{edu.degree}</b> la <b>{edu.institution}</b> ({edu.startDate ? new Date(edu.startDate).toLocaleDateString() : ''} - {edu.current ? 'Prezent' : edu.endDate ? new Date(edu.endDate).toLocaleDateString() : ''})
-                <div className="text-xs text-gray-600">{getEducationLabel(edu.field)}</div>
-                {typeof edu.gpa === 'number' && <div className="text-xs text-gray-500">GPA: {edu.gpa}</div>}
+                <b>{edu.degree}</b> la <b>{edu.institution}</b>{" "}
+                ({edu.startDate ? formatDate(edu.startDate) : ""} -{" "}
+                {edu.current ? "Prezent" : edu.endDate ? formatDate(edu.endDate) : ""})
+                <div className="text-xs text-gray-600">{getEducationLabel(edu.field || "")}</div>
+                {typeof edu.gpa === "number" && <div className="text-xs text-gray-500">GPA: {edu.gpa}</div>}
               </div>
             ))}
           </div>
           <div className="w-full mt-4">
             <h4 className="font-bold mb-2">Certificări</h4>
-            {certifications.length === 0 && <div className="text-gray-400 text-sm">Nicio certificare adăugată</div>}
-            {certifications.map((cert: any, i: number) => (
+            {certifications.length === 0 && (
+              <div className="text-gray-400 text-sm">Nicio certificare adăugată</div>
+            )}
+            {certifications.map((cert, i) => (
               <div key={i} className="mb-2 border-b pb-2">
-                <b>{cert.name}</b> de la <b>{cert.issuer}</b> ({cert.date ? new Date(cert.date).toLocaleDateString() : ''})
-                {cert.expiryDate && <span className="text-xs text-gray-500 ml-2">Expiră: {new Date(cert.expiryDate).toLocaleDateString()}</span>}
+                <b>{cert.name}</b> de la <b>{cert.issuer}</b> ({formatDate(cert.date)})
+                {cert.expiryDate && (
+                  <span className="text-xs text-gray-500 ml-2">
+                    Expiră: {formatDate(cert.expiryDate)}
+                  </span>
+                )}
                 {cert.credentialId && <div className="text-xs text-gray-500">ID: {cert.credentialId}</div>}
               </div>
             ))}
           </div>
         </div>
-        <TermsModal
-          open={showTerms}
-          onAccept={() => {
-            setShowContact(true);
-            setShowTerms(false);
-          }}
-          onClose={() => setShowTerms(false)}
-        />
         <hr className="my-6" />
         <div>
           <h3 className="text-lg font-semibold mb-4">
             Lasă o recenzie pentru candidat
           </h3>
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">
-              Rating (1-5 stele)
-            </label>
-            <div className="flex gap-1">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  onClick={() => setForm((f) => ({ ...f, rating: star }))}
-                  className={`text-2xl ${
-                    star <= form.rating ? "text-yellow-400" : "text-gray-300"
-                  }`}
-                >
-                  ⭐
-                </button>
+          <form className="space-y-4" onSubmit={handleReviewSubmit}>
+            <div>
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Numele tău (opțional)
+              </label>
+              <input
+                type="text"
+                value={form.name}
+                onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                className="w-full border rounded-lg px-3 py-2"
+                placeholder="Introdu numele"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Rating (1-5 stele)
+              </label>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setForm((prev) => ({ ...prev, rating: star }))}
+                    className={`text-2xl ${
+                      star <= form.rating ? "text-yellow-400" : "text-gray-300"
+                    }`}
+                    aria-label={`Selectează ${star} stele`}
+                  >
+                    ⭐
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Comentariu
+              </label>
+              <textarea
+                value={form.text}
+                onChange={(e) => setForm((prev) => ({ ...prev, text: e.target.value }))}
+                className="w-full border rounded-lg px-3 py-2"
+                rows={4}
+                placeholder="Scrie o recenzie pentru candidat..."
+              />
+            </div>
+            <button
+              type="submit"
+              className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg transition"
+            >
+              Trimite recenzia
+            </button>
+          </form>
+          {reviews.length > 0 && (
+            <div className="flex flex-col gap-2 mt-4">
+              {reviews.map((review, idx) => (
+                <div key={idx} className="bg-green-50 rounded-xl p-3 text-left">
+                  <div className="flex items-center gap-2 mb-1">
+                    {[...Array(review.rating)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 text-yellow-400" fill="#facc15" />
+                    ))}
+                    <span className="text-gray-700 font-semibold">
+                      {review.name || "Anonim"}
+                    </span>
+                  </div>
+                  <div className="text-gray-600">{review.text}</div>
+                </div>
               ))}
             </div>
-          </div>
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">
-              Comentariu
-            </label>
-            <textarea
-              value={form.text}
-              onChange={(e) => setForm((f) => ({ ...f, text: e.target.value }))}
-              className="w-full border rounded-lg px-3 py-2"
-              rows={4}
-              placeholder="Scrie o recenzie pentru candidat..."
-            ></textarea>
-          </div>
-          <button
-            type="submit"
-            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg transition"
-          >
-            Trimite recenzia
-          </button>
-          <div className="flex flex-col gap-2">
-            {reviews.map((r, idx) => (
-              <div key={idx} className="bg-green-50 rounded-xl p-3 text-left">
-                <div className="flex items-center gap-2 mb-1">
-                  {[...Array(r.rating)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className="w-4 h-4 text-yellow-400"
-                      fill="#facc15"
-                    />
-                  ))}
-                  <span className="text-gray-700 font-semibold">
-                    {r.name || "Anonim"}
-                  </span>
-                </div>
-                <div className="text-gray-600">{r.text}</div>
-              </div>
-            ))}
-          </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-type EmployeeListProps = {
-  onNavigate?: (page: string) => void;
+type EmployeeFilter = {
+  location: string;
+  skill: string;
+  language: string;
+  workType: string;
 };
 
-export default function EmployeeList({ onNavigate }: EmployeeListProps) {
-  const [filter, setFilter] = useState({
-    location: '',
-    skill: '',
-    language: '',
-    workType: '',
+type EmployerUserResponse = {
+  _id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  location?: string;
+  hasCompletedCv?: boolean;
+  isActive?: boolean;
+  lastLogin?: string;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
+  cv?: CvData;
+};
+
+type EmployeesApiResponse = {
+  success: boolean;
+  data: EmployerUserResponse[];
+  error?: {
+    message?: string;
+  };
+};
+
+export default function EmployeeList() {
+  const [filter, setFilter] = useState<EmployeeFilter>({
+    location: "",
+    skill: "",
+    language: "",
+    workType: "",
   });
   const [selected, setSelected] = useState<Employee | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -324,48 +502,82 @@ export default function EmployeeList({ onNavigate }: EmployeeListProps) {
   const [error, setError] = useState<string | null>(null);
   const [showTermsIdx, setShowTermsIdx] = useState<number | null>(null);
   const [showContactIdx, setShowContactIdx] = useState<number | null>(null);
+  const contactHighlightTimeout = useRef<Record<number, number>>({});
 
   useEffect(() => {
     const fetchEmployees = async () => {
       setLoading(true);
       setError(null);
       try {
-        const auth = JSON.parse(localStorage.getItem("auth-storage") || "{}")
-        const token = auth?.state?.token;
+        const storedAuthRaw = localStorage.getItem("auth-storage");
+        const storedAuth = storedAuthRaw ? JSON.parse(storedAuthRaw) : {};
+        const token: string | undefined = storedAuth?.state?.token;
+
+        if (!token) {
+          setError("Nu ești autentificat");
+          setEmployees([]);
+          return;
+        }
+
         const response = await fetch(`${API_BASE_URL}/users`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const data = await response.json();
+        const data: EmployeesApiResponse = await response.json();
         if (data.success) {
-          // 3. Modific maparea datelor din backend pentru a include user+cv
-          setEmployees(
-            data.data.map((u: any) => {
-              const cv = u.cv || {};
-              const personal = cv.personalInfo || {};
-              const professional = cv.professional || {};
-              const skills = cv.skills || {};
-              const preferences = cv.preferences || {};
-              return {
-                _id: u._id,
-                name: personal.name || u.name,
-                email: personal.email || u.email,
-                phone: personal.phone || u.phone,
-                location: personal.location || u.location || '-',
-                hasCompletedCv: u.hasCompletedCv,
-                isActive: u.isActive,
-                lastLogin: u.lastLogin,
-                emailVerified: u.emailVerified,
-                phoneVerified: u.phoneVerified,
-                photoUrl: personal.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(personal.name || u.name)}`,
-                cv,
-              };
-            })
-          );
+          const mappedEmployees = data.data.map((user) => {
+            const cv = user.cv || {};
+            const personal = cv.personalInfo || {};
+            const professional = cv.professional || {};
+            const skills = cv.skills || {};
+            const preferences = cv.preferences || {};
+
+            const normalizedProfessional = {
+              ...professional,
+              experience: Array.isArray(professional.experience) ? professional.experience : [],
+              education: Array.isArray(professional.education) ? professional.education : [],
+            };
+
+            const normalizedSkills = {
+              technical: Array.isArray(skills.technical) ? skills.technical : [],
+              soft: Array.isArray(skills.soft) ? skills.soft : [],
+              languages: Array.isArray(skills.languages) ? skills.languages : [],
+            };
+
+            const normalizedCv: CvData = {
+              personalInfo: personal,
+              professional: normalizedProfessional,
+              skills: normalizedSkills,
+              preferences,
+              certifications: Array.isArray(cv.certifications) ? cv.certifications : [],
+              documents: cv.documents || {},
+              additionalInfo: cv.additionalInfo,
+            };
+
+            return {
+              _id: user._id,
+              name: personal.name || user.name,
+              email: personal.email || user.email,
+              phone: personal.phone || user.phone,
+              location: personal.location || user.location || "-",
+              hasCompletedCv: user.hasCompletedCv,
+              isActive: user.isActive,
+              lastLogin: user.lastLogin,
+              emailVerified: user.emailVerified,
+              phoneVerified: user.phoneVerified,
+              photoUrl:
+                personal.profilePicture ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(personal.name || user.name)}`,
+              cv: normalizedCv,
+            };
+          });
+          setEmployees(mappedEmployees);
         } else {
           setError(data.error?.message || "Eroare la încărcarea angajaților");
         }
-      } catch (e: any) {
-        setError(e.message || "Eroare la încărcarea angajaților");
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Eroare la încărcarea angajaților";
+        setError(message);
       } finally {
         setLoading(false);
       }
@@ -373,19 +585,29 @@ export default function EmployeeList({ onNavigate }: EmployeeListProps) {
     fetchEmployees();
   }, []);
 
-  // 4. Adaug filtrare rapidă vizibilă sus
-  const filteredEmployees = employees.filter(emp => {
-    const cv = emp.cv || {};
-    const skills = (cv.skills?.technical || []).join(', ').toLowerCase();
-    const languages = (cv.skills?.languages || []).map((l: any) => l.language).join(', ').toLowerCase();
-    const workType = (cv.preferences?.workType || []).join(', ').toLowerCase();
-    return (
-      (!filter.location || (emp.location || '').toLowerCase().includes(filter.location.toLowerCase())) &&
-      (!filter.skill || skills.includes(filter.skill.toLowerCase())) &&
-      (!filter.language || languages.includes(filter.language.toLowerCase())) &&
-      (!filter.workType || workType.includes(filter.workType.toLowerCase()))
-    );
-  });
+  const filteredEmployees = useMemo(() => {
+    return employees.filter((emp) => {
+      const cv = emp.cv || {};
+      const technicalSkills = (cv.skills?.technical || []).join(", ").toLowerCase();
+      const languageSkills = (cv.skills?.languages || [])
+        .map((language) => language.language ?? "")
+        .join(", ")
+        .toLowerCase();
+      const workType = (cv.preferences?.workType || []).join(", ").toLowerCase();
+
+      const matchesLocation =
+        !filter.location ||
+        (emp.location || "").toLowerCase().includes(filter.location.toLowerCase());
+      const matchesSkill =
+        !filter.skill || technicalSkills.includes(filter.skill.toLowerCase());
+      const matchesLanguage =
+        !filter.language || languageSkills.includes(filter.language.toLowerCase());
+      const matchesWorkType =
+        !filter.workType || workType.includes(filter.workType.toLowerCase());
+
+      return matchesLocation && matchesSkill && matchesLanguage && matchesWorkType;
+    });
+  }, [employees, filter]);
 
   return (
     <div className="max-w-5xl mx-auto mt-20 p-4 pb-10 min-h-screen">
@@ -467,33 +689,40 @@ export default function EmployeeList({ onNavigate }: EmployeeListProps) {
                     </div>
                     {/* Contactează + Terms & Conditions */}
                     <div className="flex flex-col gap-2 mt-4">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         <button
                           className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition"
                           onClick={() => setSelected(emp)}
                         >
                           Detalii
                         </button>
-                        {showContactIdx === idx ? (
-                          <>
+
+                        {showContactIdx === idx && (
+                          <div className="flex flex-wrap items-center gap-3 bg-blue-50 border border-blue-100 rounded-lg p-3 w-full">
                             {emp.email && (
                               <a
                                 href={`mailto:${emp.email}`}
-                                className="flex items-center gap-2 text-blue-600 hover:underline"
+                                className="text-blue-600 hover:underline text-sm flex items-center gap-2 break-all"
                               >
-                                <Mail className="w-4 h-4" /> {emp.email}
+                                <Mail className="w-4 h-4" />
+                                <span>{emp.email}</span>
                               </a>
                             )}
                             {emp.phone && (
                               <a
                                 href={`tel:${emp.phone}`}
-                                className="flex items-center gap-2 text-green-600 hover:underline"
+                                className="text-green-600 hover:underline text-sm flex items-center gap-2"
                               >
-                                <Phone className="w-4 h-4" /> {emp.phone}
+                                <Phone className="w-4 h-4" />
+                                <span>{emp.phone}</span>
                               </a>
                             )}
+                          </div>
+                        )}
+                        {showContactIdx === idx ? (
+                          <>
                             <button
-                              className="mt-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg transition"
+                              className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition"
                               onClick={() => {
                                 if (emp.email) {
                                   window.open(`mailto:${emp.email}`, "_blank");
@@ -503,6 +732,14 @@ export default function EmployeeList({ onNavigate }: EmployeeListProps) {
                               }}
                             >
                               Contactează
+                            </button>
+                            <button
+                              className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg transition"
+                              onClick={() => {
+                                setShowContactIdx(null);
+                              }}
+                            >
+                              Închide
                             </button>
                           </>
                         ) : (
@@ -520,6 +757,9 @@ export default function EmployeeList({ onNavigate }: EmployeeListProps) {
                       onAccept={() => {
                         setShowContactIdx(idx);
                         setShowTermsIdx(null);
+                        contactHighlightTimeout.current[idx] = window.setTimeout(() => {
+                          setShowContactIdx(null);
+                        }, 10000);
                       }}
                       onClose={() => setShowTermsIdx(null)}
                     />

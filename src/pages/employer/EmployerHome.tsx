@@ -1,9 +1,21 @@
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../stores/authStore";
-import { useEffect, useState, useRef } from "react";
-import { employerAPI } from '../../services/api';
+import { useEffect, useState, ReactNode } from "react";
+import { employerAPI } from "../../services/api";
 
-const PLAN_OPTIONS = [
+type PlanOptionKey = "trial" | "basic" | "premium" | "single" | "promotion";
+
+type PlanOption = {
+  key: PlanOptionKey;
+  title: string;
+  price: ReactNode;
+  features: string[];
+  disabled?: boolean;
+  isAddon: boolean;
+  priceId?: string;
+};
+
+const PLAN_OPTIONS: PlanOption[] = [
   {
     key: 'trial',
     title: 'Trial',
@@ -70,9 +82,37 @@ const PLAN_OPTIONS = [
   }
 ];
 
-function PlanCard({ title, price, features, selected, onSelect, disabled, isActivePlan, isAddon, onAddonService, planKey }: any) {
+type PlanCardProps = {
+  title: string;
+  price: ReactNode;
+  features: string[];
+  selected?: boolean;
+  onSelect?: () => void;
+  onSubscribe?: () => void;
+  disabled?: boolean;
+  isActivePlan?: boolean;
+  isAddon?: boolean;
+  onAddonService?: (planKey: PlanOptionKey) => void;
+  planKey: PlanOptionKey;
+};
+
+function PlanCard({
+  title,
+  price,
+  features,
+  selected = false,
+  onSelect,
+  onSubscribe,
+  disabled = false,
+  isActivePlan = false,
+  isAddon = false,
+  onAddonService,
+  planKey,
+}: PlanCardProps) {
   return (
-    <div onClick={onSelect} className={`border rounded-lg p-6 shadow-sm transition-all duration-200 ${isActivePlan
+    <div
+      onClick={disabled ? undefined : onSelect}
+      className={`border rounded-lg p-6 shadow-sm transition-all duration-200 ${isActivePlan
       ? 'border-green-600 ring-2 ring-green-300 bg-green-50 transform scale-105'
       : selected
         ? 'border-purple-600 ring-2 ring-purple-300 bg-purple-50 transform scale-102'
@@ -90,10 +130,10 @@ function PlanCard({ title, price, features, selected, onSelect, disabled, isActi
       <h3 className="text-xl font-bold mb-2">{title}</h3>
       <div className="text-2xl font-semibold mb-4">{price}</div>
       <ul className="mb-6 flex-1 space-y-2">
-        {features.map((f: string) => (
-          <li key={f} className="text-gray-700 text-sm flex items-start">
+        {features.map((feature) => (
+          <li key={feature} className="text-gray-700 text-sm flex items-start">
             <span className="text-green-500 mr-2">✓</span>
-            {f}
+            {feature}
           </li>
         ))}
       </ul>
@@ -104,22 +144,37 @@ function PlanCard({ title, price, features, selected, onSelect, disabled, isActi
         </div>
       )}
 
-      {!isActivePlan && onSelect && !disabled && !isAddon && (
+      {!isActivePlan && !disabled && !isAddon && (
         <button
           className={`w-full py-2 rounded font-semibold transition-colors ${selected
             ? 'bg-purple-600 text-white hover:bg-purple-700'
             : 'bg-purple-100 text-purple-800 hover:bg-purple-200'
             }`}
-          onClick={onSelect}
+          onClick={() => {
+            onSelect?.();
+            onSubscribe?.();
+          }}
         >
           Alege
         </button>
       )}
 
-      {isAddon && (
-        <div className="text-xs text-gray-500 text-center py-1 px-2 rounded bg-gray-100">
-          Serviciu adițional
-        </div>
+      {isAddon && onAddonService ? (
+        <button
+          className="mt-2 w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 rounded transition"
+          onClick={(event) => {
+            event.stopPropagation();
+            onAddonService(planKey);
+          }}
+        >
+          Activează
+        </button>
+      ) : (
+        isAddon && (
+          <div className="text-xs text-gray-500 text-center py-1 px-2 rounded bg-gray-100">
+            Serviciu adițional
+          </div>
+        )
       )}
 
       {disabled && <div className="text-xs text-gray-400 text-center">Activ automat la înregistrare</div>}
@@ -137,7 +192,6 @@ export default function EmployerHome() {
   }>({ trialActive: false, subscriptionActive: false });
   const [selectedPlan, setSelectedPlan] = useState<'basic' | 'premium' | 'single' | 'promotion'>('basic');
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const hasNavigated = useRef(false);
 
   useEffect(() => {
     if (employer) {
@@ -359,6 +413,7 @@ export default function EmployerHome() {
                   features={plan.features}
                   selected={selectedPlan === plan.key}
                   onSelect={plan.disabled || activePlanKey === plan.key ? undefined : () => setSelectedPlan(plan.key as 'basic' | 'premium' | 'single' | 'promotion')}
+                  onSubscribe={plan.disabled || activePlanKey === plan.key ? undefined : () => handleSubscribe(plan.priceId)}
                   disabled={plan.disabled}
                   isActivePlan={activePlanKey === plan.key && !plan.disabled}
                   isAddon={plan.isAddon}
@@ -383,23 +438,21 @@ export default function EmployerHome() {
                     disabled={false}
                     isActivePlan={false}
                     isAddon={plan.isAddon}
-                    onAddonService={undefined}
+                    onAddonService={handleAddonService}
                     planKey={plan.key}
                   />
                 ))}
               </div>
             </div>
 
-            {activePlanKey !== 'trial' && (
-              <div className="flex justify-center">
-                <button
-                  onClick={() => handleSubscribe(PLAN_OPTIONS.find(p => p.key === selectedPlan)?.priceId)}
-                  className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-8 py-3 rounded-lg shadow-lg text-lg"
-                >
-                  Abonează-te la {PLAN_OPTIONS.find(p => p.key === selectedPlan)?.title}
-                </button>
-              </div>
-            )}
+            <div className="flex justify-center">
+              <button
+                onClick={() => handleSubscribe(PLAN_OPTIONS.find(p => p.key === selectedPlan)?.priceId)}
+                className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-8 py-3 rounded-lg shadow-lg text-lg"
+              >
+                Abonează-te la {PLAN_OPTIONS.find(p => p.key === selectedPlan)?.title}
+              </button>
+            </div>
           </div>
         </div>
       </div>

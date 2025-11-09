@@ -1,22 +1,22 @@
 import { useAuthStore } from "../../stores/authStore";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSnackbar } from "../../hooks/useSnackbar";
 import { API_BASE_URL } from "../../config/env";
-import { 
-  Building2, 
-  Edit, 
-  Save, 
+import { employerAPI } from "../../services/api";
+import {
+  Building2,
+  Edit,
+  Save,
   X,
   User,
   Mail,
   Phone,
-  MapPin,
   Globe,
   FileText,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
-import PhoneInput from '../../components/PhoneInput';
+import PhoneInput from "../../components/PhoneInput";
 
 interface FormData {
   name: string;
@@ -29,6 +29,20 @@ interface FormData {
   email: string;
   phone: { prefix: string; number: string };
   website: string;
+}
+
+interface CompanyProfileData {
+  name?: string;
+  cui?: string;
+  location?: string;
+  domain?: string;
+  description?: string;
+  logoUrl?: string;
+  contactPerson?: string;
+  position?: string;
+  email?: string;
+  phone?: string;
+  website?: string;
 }
 
 const DOMAINS = [
@@ -45,160 +59,144 @@ const DOMAINS = [
   { value: "educatie", label: "Educație / Meditații" },
   { value: "sanatate", label: "Sănătate / Farmacie" },
   { value: "horeca", label: "HoReCa / Bucătărie" },
-  { value: "altele", label: "Altele" }
+  { value: "altele", label: "Altele" },
 ];
 
 const getDomainLabel = (value: string) => {
-  const option = DOMAINS.find(opt => opt.value === value);
+  const option = DOMAINS.find((opt) => opt.value === value);
   return option ? option.label : value;
 };
+
+interface EmployerProfileResponse {
+  success: boolean;
+  data: {
+    companyProfile?: CompanyProfileData;
+  };
+  error?: {
+    message?: string;
+  };
+}
 
 export default function EmployerProfile() {
   const { token, employer, updateEmployer } = useAuthStore();
   const navigate = useNavigate();
   const { showSuccess, showError } = useSnackbar();
   const [searchParams] = useSearchParams();
-  const fromCompletion = searchParams.get('from') === 'completion';
-  
+  const fromCompletion = searchParams.get("from") === "completion";
+
   // Profile editing states
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [companyData, setCompanyData] = useState<any>(null);
+  const [companyData, setCompanyData] = useState<CompanyProfileData | null>(null);
   const [isLoadingCompany, setIsLoadingCompany] = useState(false);
   const hasLoadedCompany = useRef(false);
   const [showCompletionBanner, setShowCompletionBanner] = useState(fromCompletion);
-  
+
   const [formData, setFormData] = useState<FormData>({
-    name: '',
-    cui: '',
-    location: '',
-    domain: '',
-    description: '',
-    contactPerson: '',
-    position: '',
-    email: '',
-    phone: { prefix: '+40', number: '' },
-    website: ''
+    name: "",
+    cui: "",
+    location: "",
+    domain: "",
+    description: "",
+    contactPerson: "",
+    position: "",
+    email: "",
+    phone: { prefix: "+40", number: "" },
+    website: "",
   });
 
-
-
-  useEffect(() => {
-    // Load company data if employer has completed profile and we haven't loaded it yet
-    if (employer?.hasProfileCompleted && !hasLoadedCompany.current && !isLoadingCompany) {
-      loadCompanyData();
-    }
-  }, [employer]);
-
-  // Clean URL parameter and manage completion flow
-  useEffect(() => {
-    if (fromCompletion) {
-      // Clean the URL parameter
-      const newSearchParams = new URLSearchParams(searchParams);
-      newSearchParams.delete('from');
-      navigate(`/employer/profile?${newSearchParams.toString()}`, { replace: true });
-    }
-  }, [fromCompletion, navigate, searchParams]);
-
-  const loadCompanyData = async () => {
+  const loadCompanyData = useCallback(async () => {
     if (!token || isLoadingCompany || hasLoadedCompany.current) {
-      console.log('loadCompanyData skipped:', { 
-        hasToken: !!token, 
-        isLoadingCompany, 
-        hasLoadedCompany: hasLoadedCompany.current 
-      });
       return;
     }
-    
-    console.log('=== LOADING COMPANY DATA ===');
+
     setIsLoadingCompany(true);
     hasLoadedCompany.current = true;
-    
+
     try {
-      const response = await fetch(`${API_BASE_URL}/employer/profile`, {
+      const response = await fetch(`${API_BASE_URL}/employers/profile`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Profile response data:', data);
-        console.log('Company profile from response:', data.data.companyProfile);
-        console.log('Logo URL from response:', data.data.companyProfile?.logoUrl);
-        
-        setCompanyData(data.data.companyProfile);
-        
-        // Pre-populate form with existing data
-        if (data.data.companyProfile) {
-          const company = data.data.companyProfile;
-          
-          // Parse phone number
-          let phoneData = { prefix: '+40', number: '' };
-          if (company.phone) {
-            const phone = company.phone;
-            if (phone.startsWith('+40')) {
-              phoneData = {
-                prefix: '+40',
-                number: phone.substring(3)
-              };
-            } else if (phone.startsWith('40')) {
-              phoneData = {
-                prefix: '+40',
-                number: phone.substring(2)
-              };
-            } else {
-              phoneData = {
-                prefix: '+40',
-                number: phone
-              };
-            }
+
+      if (!response.ok) {
+        return;
+      }
+
+      const data: EmployerProfileResponse = await response.json();
+      const company = data.data.companyProfile;
+
+      setCompanyData(company || null);
+
+      if (company) {
+        let phoneData = { prefix: "+40", number: "" };
+        if (company.phone) {
+          const phone = company.phone;
+          if (phone.startsWith("+40")) {
+            phoneData = { prefix: "+40", number: phone.substring(3) };
+          } else if (phone.startsWith("40")) {
+            phoneData = { prefix: "+40", number: phone.substring(2) };
+          } else {
+            phoneData = { prefix: "+40", number: phone };
           }
-          
-          const newFormData = {
-            name: company.name || "",
-            cui: company.cui || "",
-            location: company.location || "",
-            domain: company.domain || "",
-            description: company.description || "",
-            logoUrl: company.logoUrl || "",
-            contactPerson: company.contactPerson || "",
-            position: company.position || "",
-            email: company.email || "",
-            phone: phoneData,
-            website: company.website || ""
-          };
-          
-          console.log('Setting form data:', newFormData);
-          setFormData(newFormData);
         }
-      } else {
-        console.error("Failed to load company data:", response.status);
+
+        setFormData({
+          name: company.name || "",
+          cui: company.cui || "",
+          location: company.location || "",
+          domain: company.domain || "",
+          description: company.description || "",
+          contactPerson: company.contactPerson || "",
+          position: company.position || "",
+          email: company.email || "",
+          phone: phoneData,
+          website: company.website || "",
+        });
       }
     } catch (error) {
       console.error("Error loading company data:", error);
     } finally {
       setIsLoadingCompany(false);
     }
-  };
+  }, [token, isLoadingCompany]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  useEffect(() => {
+    if (employer?.hasProfileCompleted && !hasLoadedCompany.current && !isLoadingCompany) {
+      loadCompanyData();
+    }
+  }, [employer, isLoadingCompany, loadCompanyData]);
+
+  // Clean URL parameter and manage completion flow
+  useEffect(() => {
+    if (fromCompletion) {
+      // Clean the URL parameter
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete("from");
+      navigate(`/employer/profile?${newSearchParams.toString()}`, { replace: true });
+    }
+  }, [fromCompletion, navigate, searchParams]);
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleSave = async () => {
     if (isLoading) return;
-    
+
     if (!token) {
       showError("Nu ești autentificat. Te rugăm să te loghezi din nou.");
       navigate("/employer/login");
       return;
     }
-    
+
     setIsLoading(true);
 
     try {
@@ -208,46 +206,40 @@ export default function EmployerProfile() {
         phone: phoneString,
       };
 
-      const response = await fetch(`${API_BASE_URL}/employer/save-profile`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      const response = await employerAPI.saveCompanyProfile(payload);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        if (errorData.error?.message?.includes("token")) {
+      if (!response.success) {
+        if (response.error?.message?.includes("token")) {
           showError("Sesiunea a expirat. Te rugăm să te loghezi din nou.");
           navigate("/employer/login");
           return;
         }
-        throw new Error(errorData.message || "Eroare la salvarea profilului");
+        throw new Error(response.error?.message || "Eroare la salvarea profilului");
       }
 
-      const result = await response.json();
-      
       // Update employer in store
       if (updateEmployer) {
-        updateEmployer({ 
-          ...employer, 
+        updateEmployer({
+          ...employer,
           hasProfileCompleted: true,
-          companyProfile: result.data.companyProfile
+          companyProfile: response.data?.companyProfile,
         });
       }
-      
+
       // Reset company loading flag to allow reload
       hasLoadedCompany.current = false;
-      
+
       // Reload company data
       await loadCompanyData();
-      
+
       showSuccess("Profilul companiei a fost actualizat cu succes!");
       setIsEditing(false);
-    } catch (error: any) {
-      showError(error.message || "Eroare la salvarea profilului. Vă rugăm încercați din nou.");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Eroare la salvarea profilului. Vă rugăm încercați din nou.";
+      showError(message);
     } finally {
       setIsLoading(false);
     }
@@ -256,45 +248,43 @@ export default function EmployerProfile() {
   const handleCancel = () => {
     if (companyData) {
       // Parse phone number
-      let phoneData = { prefix: '+40', number: '' };
+      let phoneData = { prefix: "+40", number: "" };
       if (companyData.phone) {
         const phone = companyData.phone;
-        if (phone.startsWith('+40')) {
+        if (phone.startsWith("+40")) {
           phoneData = {
-            prefix: '+40',
-            number: phone.substring(3)
+            prefix: "+40",
+            number: phone.substring(3),
           };
-        } else if (phone.startsWith('40')) {
+        } else if (phone.startsWith("40")) {
           phoneData = {
-            prefix: '+40',
-            number: phone.substring(2)
+            prefix: "+40",
+            number: phone.substring(2),
           };
         } else {
           phoneData = {
-            prefix: '+40',
-            number: phone
+            prefix: "+40",
+            number: phone,
           };
         }
       }
-      
-      setFormData({
-        name: companyData.name || '',
-        cui: companyData.cui || '',
-        location: companyData.location || '',
-        domain: companyData.domain || '',
-        description: companyData.description || '',
 
-        contactPerson: companyData.contactPerson || '',
-        position: companyData.position || '',
-        email: companyData.email || '',
+      setFormData({
+        name: companyData.name || "",
+        cui: companyData.cui || "",
+        location: companyData.location || "",
+        domain: companyData.domain || "",
+        description: companyData.description || "",
+
+        contactPerson: companyData.contactPerson || "",
+        position: companyData.position || "",
+        email: companyData.email || "",
         phone: phoneData,
-        website: companyData.website || ''
+        website: companyData.website || "",
       });
     }
     setIsEditing(false);
   };
-
-
 
   if (!employer) {
     return (
@@ -321,14 +311,16 @@ export default function EmployerProfile() {
                 <h1 className="text-2xl font-bold text-gray-900">{employer.companyName}</h1>
                 <p className="text-gray-600">{employer.email}</p>
                 <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    employer.hasProfileCompleted 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {employer.hasProfileCompleted ? 'Profil Completat' : 'Profil Incomplet'}
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs ${
+                      employer.hasProfileCompleted
+                        ? "bg-green-100 text-green-800"
+                        : "bg-yellow-100 text-yellow-800"
+                    }`}
+                  >
+                    {employer.hasProfileCompleted ? "Profil Completat" : "Profil Incomplet"}
                   </span>
-                  <span>Membru din {new Date(employer.createdAt).toLocaleDateString('ro-RO')}</span>
+                  <span>Membru din {new Date(employer.createdAt).toLocaleDateString("ro-RO")}</span>
                 </div>
               </div>
             </div>
@@ -370,12 +362,11 @@ export default function EmployerProfile() {
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                <h3 className="text-blue-900 font-semibold mb-1">
-                  Completează profilul companiei
-                </h3>
+                <h3 className="text-blue-900 font-semibold mb-1">Completează profilul companiei</h3>
                 <p className="text-blue-800 text-sm mb-3">
-                  Pentru a posta job-uri și a primi aplicații relevante, completează informațiile despre compania ta. 
-                  Poți vizualiza mai jos toate câmpurile disponibile și apoi le poți edita.
+                  Pentru a posta job-uri și a primi aplicații relevante, completează informațiile
+                  despre compania ta. Poți vizualiza mai jos toate câmpurile disponibile și apoi le
+                  poți edita.
                 </p>
                 <div className="flex gap-2">
                   <button
@@ -408,11 +399,9 @@ export default function EmployerProfile() {
                 <Building2 className="w-5 h-5 text-green-600" />
                 Informații companie
               </h2>
-              
+
               {isEditing ? (
                 <div className="space-y-4">
-
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -459,7 +448,7 @@ export default function EmployerProfile() {
                       </select>
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Adresa sediului
@@ -474,7 +463,7 @@ export default function EmployerProfile() {
                       required
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Descriere companie
@@ -534,7 +523,7 @@ export default function EmployerProfile() {
                 <User className="w-5 h-5 text-green-600" />
                 Informații contact
               </h2>
-              
+
               {isEditing ? (
                 <div className="space-y-4">
                   <div>
@@ -550,7 +539,7 @@ export default function EmployerProfile() {
                       placeholder="Nume și prenume"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Funcția în firmă
@@ -564,7 +553,7 @@ export default function EmployerProfile() {
                       placeholder="ex: HR, Manager, Admin"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Email de contact
@@ -578,18 +567,16 @@ export default function EmployerProfile() {
                       placeholder="Email de contact"
                     />
                   </div>
-                  
+
                   <PhoneInput
                     label="Telefon (WhatsApp)"
                     value={formData.phone}
-                    onChange={val => setFormData({ ...formData, phone: val })}
+                    onChange={(val) => setFormData({ ...formData, phone: val })}
                     required
                   />
-                  
+
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Website
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
                     <input
                       type="url"
                       name="website"
@@ -654,4 +641,4 @@ export default function EmployerProfile() {
       </div>
     </div>
   );
-} 
+}

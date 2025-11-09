@@ -1,27 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuthStore } from "../../stores/authStore";
+import type { User } from "../../stores/authStore";
 import { useSnackbar } from "../../hooks/useSnackbar";
 import { Eye, EyeOff, Mail, Phone, ArrowLeft } from "lucide-react";
-import PhoneInput from '../../components/PhoneInput';
-import { getApiUrl, GOOGLE_OAUTH_URL } from '../../config/env';
-import { useEffect } from 'react';
+import PhoneInput from "../../components/PhoneInput";
+import { getApiUrl, GOOGLE_OAUTH_URL } from "../../config/env";
 
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuthStore();
   const { showSuccess, showError } = useSnackbar();
-  
+
   const [loginMethod, setLoginMethod] = useState<"email" | "phone">("email");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  
+
   // Email login fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  
+
   // Phone login fields
-  const [phone, setPhone] = useState({ prefix: '+40', number: '' });
+  const [phone, setPhone] = useState({ prefix: "+40", number: "" });
   const [smsCode, setSmsCode] = useState("");
   const [showSmsInput, setShowSmsInput] = useState(false);
   const [isSendingSms, setIsSendingSms] = useState(false);
@@ -38,7 +38,7 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-              const response = await fetch(getApiUrl("/auth/login-user"), {
+      const response = await fetch(getApiUrl("/auth/login-user"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -46,21 +46,27 @@ export default function Login() {
         body: JSON.stringify({
           email,
           password,
-          loginMethod: "email"
+          loginMethod: "email",
         }),
       });
 
-      const data = await response.json();
+      const data: {
+        data: { token: string; user: User };
+        error?: { message?: string };
+      } = await response.json();
 
       if (!response.ok) {
         throw new Error(data.error?.message || "Eroare la autentificare");
       }
 
-               await login(data.data.token, 'user', data.data.user);
+      await login(data.data.token, "user", data.data.user);
       showSuccess("Autentificare reușită!");
       navigate("/employee/home");
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Eroare la autentificare. Vă rugăm încercați din nou.";
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Eroare la autentificare. Vă rugăm încercați din nou.";
       showError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -87,11 +93,14 @@ export default function Login() {
           },
           body: JSON.stringify({
             phone: phone.prefix + phone.number,
-            loginMethod: "phone"
+            loginMethod: "phone",
           }),
         });
 
-        const data = await response.json();
+        const data: {
+          data?: { requiresSmsVerification?: boolean };
+          error?: { message?: string };
+        } = await response.json();
 
         if (!response.ok) {
           throw new Error(data.error?.message || "Eroare la trimiterea SMS-ului");
@@ -102,7 +111,10 @@ export default function Login() {
           showSuccess("Codul SMS a fost trimis!");
         }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Eroare la trimiterea SMS-ului. Vă rugăm încercați din nou.";
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Eroare la trimiterea SMS-ului. Vă rugăm încercați din nou.";
         showError(errorMessage);
       } finally {
         setIsSendingSms(false);
@@ -123,21 +135,28 @@ export default function Login() {
           },
           body: JSON.stringify({
             phone: phone.prefix + phone.number,
-            smsCode
+            smsCode,
           }),
         });
 
-        const data = await response.json();
+        const data: {
+          data: { token: string; user: User };
+          error?: { message?: string };
+        } = await response.json();
 
         if (!response.ok) {
           throw new Error(data.error?.message || "Eroare la verificarea SMS-ului");
         }
 
-        await login(data.data.token, 'user', data.data.user);
+        await login(data.data.token, "user", data.data.user);
         showSuccess("Autentificare reușită!");
         navigate("/employee/home");
-      } catch (error: any) {
-        showError(error.message || "Eroare la verificarea SMS-ului. Vă rugăm încercați din nou.");
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Eroare la verificarea SMS-ului. Vă rugăm încercați din nou.";
+        showError(errorMessage);
       } finally {
         setIsLoading(false);
       }
@@ -149,30 +168,16 @@ export default function Login() {
     setSmsCode("");
   };
 
-  const formatPhoneNumber = (value: string) => {
-    // Remove all non-digits
-    const digits = value.replace(/\D/g, '');
-    
-    // Format as Romanian phone number
-    if (digits.startsWith('0')) {
-      return digits.replace(/(\d{1})(\d{3})(\d{3})(\d{3})/, '$1$2$3$4');
-    } else if (digits.startsWith('40')) {
-      return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{3})/, '0$2$3$4');
-    }
-    
-    return digits;
-  };
-
   // OAuth login handler
-  const handleOAuthLogin = (provider: 'google') => {
+  const handleOAuthLogin = () => {
     window.location.href = GOOGLE_OAUTH_URL;
   };
 
   // Prevent redirect to home if on reset-password page
   useEffect(() => {
     if (
-      window.location.pathname === '/employee/reset-password' ||
-      window.location.pathname.startsWith('/employee/reset-password')
+      window.location.pathname === "/employee/reset-password" ||
+      window.location.pathname.startsWith("/employee/reset-password")
     ) {
       // Do not redirect
       return;
@@ -192,10 +197,7 @@ export default function Login() {
               {showSmsInput ? "Verificare SMS" : "Autentificare"}
             </h1>
             <p className="text-gray-600">
-              {showSmsInput 
-                ? "Introdu codul primit prin SMS"
-                : "Conectează-te la contul tău"
-              }
+              {showSmsInput ? "Introdu codul primit prin SMS" : "Conectează-te la contul tău"}
             </p>
           </div>
 
@@ -231,9 +233,7 @@ export default function Login() {
           {loginMethod === "email" && !showSmsInput && (
             <form onSubmit={handleEmailLogin} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                 <input
                   type="email"
                   value={email}
@@ -243,11 +243,9 @@ export default function Login() {
                   required
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Parolă
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Parolă</label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
@@ -281,12 +279,7 @@ export default function Login() {
           {loginMethod === "phone" && (
             <form onSubmit={handlePhoneLogin} className="space-y-4">
               {!showSmsInput ? (
-                <PhoneInput
-                  label="Număr de telefon"
-                  value={phone}
-                  onChange={setPhone}
-                  required
-                />
+                <PhoneInput label="Număr de telefon" value={phone} onChange={setPhone} required />
               ) : (
                 <div>
                   <div className="flex items-center justify-between mb-4">
@@ -305,7 +298,7 @@ export default function Login() {
                   <input
                     type="text"
                     value={smsCode}
-                    onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-lg tracking-widest"
                     placeholder="000000"
                     maxLength={6}
@@ -322,14 +315,13 @@ export default function Login() {
                 disabled={isLoading || isSendingSms}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-200 disabled:opacity-50"
               >
-                {isLoading 
-                  ? "Se verifică..." 
-                  : isSendingSms 
-                    ? "Se trimite SMS..." 
-                    : showSmsInput 
-                      ? "Verifică codul" 
-                      : "Trimite codul SMS"
-                }
+                {isLoading
+                  ? "Se verifică..."
+                  : isSendingSms
+                  ? "Se trimite SMS..."
+                  : showSmsInput
+                  ? "Verifică codul"
+                  : "Trimite codul SMS"}
               </button>
             </form>
           )}
@@ -355,17 +347,29 @@ export default function Login() {
           <div className="flex flex-col gap-3 mb-6">
             <button
               type="button"
-              onClick={() => handleOAuthLogin('google')}
+              onClick={() => handleOAuthLogin("google")}
               className="flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2 px-4 hover:bg-gray-100 transition"
             >
               <span className="w-6 h-6 flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24" height="24">
                   <g>
-                    <path fill="#4285F4" d="M24 9.5c3.54 0 6.7 1.22 9.2 3.23l6.9-6.9C35.64 2.36 30.18 0 24 0 14.82 0 6.73 5.82 2.69 14.09l8.06 6.26C12.36 13.98 17.67 9.5 24 9.5z"/>
-                    <path fill="#34A853" d="M46.1 24.55c0-1.64-.15-3.22-.43-4.74H24v9.01h12.42c-.54 2.9-2.18 5.36-4.65 7.01l7.18 5.59C43.98 37.13 46.1 31.36 46.1 24.55z"/>
-                    <path fill="#FBBC05" d="M10.75 28.35c-.48-1.44-.75-2.97-.75-4.55s.27-3.11.75-4.55l-8.06-6.26C1.01 16.64 0 20.19 0 24c0 3.81 1.01 7.36 2.69 10.55l8.06-6.2z"/>
-                    <path fill="#EA4335" d="M24 48c6.18 0 11.36-2.05 15.14-5.59l-7.18-5.59c-2 1.34-4.56 2.13-7.96 2.13-6.33 0-11.64-4.48-13.25-10.55l-8.06 6.2C6.73 42.18 14.82 48 24 48z"/>
-                    <path fill="none" d="M0 0h48v48H0z"/>
+                    <path
+                      fill="#4285F4"
+                      d="M24 9.5c3.54 0 6.7 1.22 9.2 3.23l6.9-6.9C35.64 2.36 30.18 0 24 0 14.82 0 6.73 5.82 2.69 14.09l8.06 6.26C12.36 13.98 17.67 9.5 24 9.5z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M46.1 24.55c0-1.64-.15-3.22-.43-4.74H24v9.01h12.42c-.54 2.9-2.18 5.36-4.65 7.01l7.18 5.59C43.98 37.13 46.1 31.36 46.1 24.55z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M10.75 28.35c-.48-1.44-.75-2.97-.75-4.55s.27-3.11.75-4.55l-8.06-6.26C1.01 16.64 0 20.19 0 24c0 3.81 1.01 7.36 2.69 10.55l8.06-6.2z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M24 48c6.18 0 11.36-2.05 15.14-5.59l-7.18-5.59c-2 1.34-4.56 2.13-7.96 2.13-6.33 0-11.64-4.48-13.25-10.55l-8.06 6.2C6.73 42.18 14.82 48 24 48z"
+                    />
+                    <path fill="none" d="M0 0h48v48H0z" />
                   </g>
                 </svg>
               </span>

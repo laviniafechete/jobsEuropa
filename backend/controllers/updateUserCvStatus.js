@@ -1,26 +1,36 @@
-// backend/controllers/updateUserCvStatus.js
 import User from "../models/User.js";
+import { asyncHandler, sendSuccess, sendError } from "../utils/errorHandler.js";
 
-export const updateHasCompletedCv = async (req, res) => {
-  const { userId } = req.body;
-
-  if (!userId) {
-    return res.status(400).json({ message: "Lipsește userId-ul." });
+export const updateHasCompletedCv = asyncHandler(async (req, res) => {
+  if (req.userType !== "user") {
+    return sendError(res, "Doar utilizatorii își pot actualiza statusul CV-ului", 403);
   }
 
-  try {
-    const user = await User.findById(userId);
+  const user = await User.findById(req.user._id);
 
-    if (!user) {
-      return res.status(404).json({ message: "Utilizatorul nu a fost găsit." });
-    }
-
-    user.hasCompletedCv = true;
-    await user.save();
-
-    res.status(200).json({ message: "CV marcat ca finalizat." });
-  } catch (error) {
-    console.error("Eroare la actualizarea statusului CV:", error);
-    res.status(500).json({ message: "Eroare server", error });
+  if (!user) {
+    return sendError(res, "Utilizatorul nu a fost găsit", 404);
   }
-};
+
+  const { status, hasCompleted } = req.body;
+
+  let nextValue = true;
+  if (typeof hasCompleted === "boolean") {
+    nextValue = hasCompleted;
+  } else if (typeof status === "boolean") {
+    nextValue = status;
+  } else if (typeof status === "string") {
+    nextValue = ["completed", "true", "1"].includes(status.toLowerCase());
+  }
+
+  user.hasCompletedCv = nextValue;
+  await user.save();
+
+  sendSuccess(
+    res,
+    {
+      hasCompletedCv: user.hasCompletedCv,
+    },
+    "Statusul CV-ului a fost actualizat"
+  );
+});

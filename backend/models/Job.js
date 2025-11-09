@@ -64,21 +64,24 @@ const jobSchema = new mongoose.Schema(
       enum: ['active', 'inactive', 'pending', 'expired'],
       default: 'active'
     },
-    applications: [{
-      user: { 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: "User" 
-      },
-      appliedAt: { 
-        type: Date, 
-        default: Date.now 
-      },
-      status: { 
-        type: String, 
-        enum: ['pending', 'reviewed', 'accepted', 'rejected'],
-        default: 'pending'
-      }
-    }],
+    applications: {
+      type: [{
+        user: { 
+          type: mongoose.Schema.Types.ObjectId, 
+          ref: "User" 
+        },
+        appliedAt: { 
+          type: Date, 
+          default: Date.now 
+        },
+        status: { 
+          type: String, 
+          enum: ['pending', 'reviewed', 'accepted', 'rejected'],
+          default: 'pending'
+        }
+      }],
+      default: []
+    },
     views: { 
       type: Number, 
       default: 0 
@@ -101,7 +104,7 @@ jobSchema.index({ createdAt: -1 });
 
 // Virtual for application count
 jobSchema.virtual('applicationCount').get(function() {
-  return this.applications.length;
+  return Array.isArray(this.applications) ? this.applications.length : 0;
 });
 
 // Pre-save middleware to ensure salary consistency
